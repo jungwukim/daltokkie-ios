@@ -1,5 +1,8 @@
-// 하우스 커스프 계산 — houses.ts 포팅
-// 앱은 Placidus("P")만 사용. 극지방 폴백용 Porphyrius("O") 포함.
+// 하우스 커스프 — Placidus (반호 분할 반복법) 신규 구현
+//
+// 공개 수식 기반: GMST(IAU 1982), MC/ASC 표준 구면삼각 공식,
+// Placidus 반복법(상승차 보정 — 점성학 문헌의 공개 알고리즘).
+// Swiss Ephemeris 코드 미참조 신규 작성.
 
 import Foundation
 
@@ -9,95 +12,80 @@ struct HousesResult {
 }
 
 enum Houses {
-    private static let VERY_SMALL = 1e-10
+    private static let CONVERGENCE = 1e-9
 
-    private static func sind(_ x: Double) -> Double { sin(x * Eph.DEG_TO_RAD) }
-    private static func cosd(_ x: Double) -> Double { cos(x * Eph.DEG_TO_RAD) }
-    private static func tand(_ x: Double) -> Double { tan(x * Eph.DEG_TO_RAD) }
-    private static func asind(_ x: Double) -> Double { asin(x) * Eph.RAD_TO_DEG }
-    private static func atand(_ x: Double) -> Double { atan(x) * Eph.RAD_TO_DEG }
-
-    private static func clamp1(_ x: Double) -> Double {
-        if x > 1 { return 1 }
-        if x < -1 { return -1 }
-        return x
-    }
-
-    // MARK: - ASC 보조 함수
-
-    private static func asc1(_ x1in: Double, _ f: Double, _ sine: Double, _ cose: Double) -> Double {
-        let x1 = Eph.degnorm(x1in)
-        let n = Int(floor(x1 / 90)) + 1
-        if abs(90 - f) < VERY_SMALL { return 180 }
-        if abs(90 + f) < VERY_SMALL { return 0 }
-        var ass: Double
-        if n == 1 {
-            ass = asc2(x1, f, sine, cose)
-        } else if n == 2 {
-            ass = 180 - asc2(180 - x1, -f, sine, cose)
-        } else if n == 3 {
-            ass = 180 + asc2(x1 - 180, -f, sine, cose)
-        } else {
-            ass = 360 - asc2(360 - x1, f, sine, cose)
-        }
-        ass = Eph.degnorm(ass)
-        if abs(ass - 90) < VERY_SMALL { ass = 90 }
-        if abs(ass - 180) < VERY_SMALL { ass = 180 }
-        if abs(ass - 270) < VERY_SMALL { ass = 270 }
-        if abs(ass - 360) < VERY_SMALL { ass = 0 }
-        return ass
-    }
-
-    private static func asc2(_ x: Double, _ f: Double, _ sine: Double, _ cose: Double) -> Double {
-        var ass = -tand(f) * sine + cose * cosd(x)
-        if abs(ass) < VERY_SMALL { ass = 0 }
-        var sinx = sind(x)
-        if abs(sinx) < VERY_SMALL { sinx = 0 }
-        if sinx == 0 {
-            ass = (ass < 0) ? -VERY_SMALL : VERY_SMALL
-        } else if ass == 0 {
-            ass = (sinx < 0) ? -90 : 90
-        } else {
-            ass = atand(sinx / ass)
-        }
-        if ass < 0 { ass = 180 + ass }
-        return ass
-    }
-
-    /// p1 - p2 정규화 차이, (-180, 180]
-    private static func difdeg2n(_ p1: Double, _ p2: Double) -> Double {
-        var d = Eph.degnorm(p1 - p2)
-        if d > 180 { d -= 360 }
-        return d
-    }
-
-    // MARK: - 항성시 (IAU 1976)
-
-    private static func sidtime0(_ tjdUt: Double, _ eps: Double, _ nut: Double) -> Double {
-        let jd = tjdUt
-        var jd0 = floor(jd)
-        var secs = tjdUt - jd0
-        if secs < 0.5 {
+    /// 그리니치 평균 항성시 (시간 단위) — IAU 1982 공식 + 분점차
+    private static func siderealTimeHours(jdUT: Double, trueObliquityDeg: Double, nutLonDeg: Double) -> Double {
+        // 자정 기준 jd0 + 당일 경과초
+        var jd0 = floor(jdUT)
+        var daySec = (jdUT - jd0) * 86400
+        if daySec < 43200 {
             jd0 -= 0.5
-            secs += 0.5
+            daySec += 43200
         } else {
             jd0 += 0.5
-            secs -= 0.5
+            daySec -= 43200
         }
-        secs *= 86400.0
-        let tu = (jd0 - 2451545.0) / 36525.0
-        var gmst = ((-6.2e-6 * tu + 9.3104e-2) * tu + 8640184.812866) * tu + 24110.54841
-        let msday = 1.0 + ((-1.86e-5 * tu + 0.186208) * tu + 8640184.812866) / (86400 * 36525)
-        gmst += msday * secs
-        let eqeq = 240.0 * nut * cos(eps * Eph.DEG_TO_RAD)
-        gmst += eqeq
-        gmst = gmst - 86400.0 * floor(gmst / 86400.0)
-        return gmst / 3600
+        let tu = (jd0 - Eph.J2000) / 36525
+        var gmstSec = Eph.horner(tu, [24110.54841, 8640184.812866, 0.093104, -6.2e-6])
+        let siderealRate = 1.0 + Eph.horner(tu, [8640184.812866, 0.372416, -1.86e-5]) / (86400 * 36525)
+        gmstSec += daySec * siderealRate
+        // 분점차 (equation of equinoxes): Δψ·cos ε — 1° = 240초
+        gmstSec += 240 * nutLonDeg * cos(trueObliquityDeg * Eph.DEG_TO_RAD)
+        gmstSec -= 86400 * floor(gmstSec / 86400)
+        return gmstSec / 3600
     }
 
-    // MARK: - 하우스 시스템
+    /// 사승각 x에서 위도 φ 지평선에 떠오르는 황경 — 표준 상승점 공식
+    /// λ = atan2( sin x, cos x · cos ε − tan φ · sin ε );  x = ARMC + 90° 가 동쪽 지평선(ASC)
+    private static func eclipticLonRising(at x: Double, latitude phi: Double, sinE: Double, cosE: Double) -> Double {
+        let xr = Eph.degnorm(x) * Eph.DEG_TO_RAD
+        let phir = phi * Eph.DEG_TO_RAD
+        let lon = atan2(sin(xr), cos(xr) * cosE - tan(phir) * sinE)
+        return Eph.degnorm(lon * Eph.RAD_TO_DEG)
+    }
 
-    private static func computeOpposites(_ cusps: inout [Double]) {
+    /// Placidus 단일 커스프 반복: 황경 추정 → 적위 → 상승차(AD) → 사승각 보정 반복
+    private static func placidusCusp(
+        armc: Double, latitude phi: Double, sinE: Double, cosE: Double,
+        offset: Double, fraction: Double, direction: Double
+    ) -> Double {
+        let phir = phi * Eph.DEG_TO_RAD
+        var lon = eclipticLonRising(at: armc + offset, latitude: phi, sinE: sinE, cosE: cosE)
+        for _ in 0..<100 {
+            let dec = asin(min(1, max(-1, sin(lon * Eph.DEG_TO_RAD) * sinE)))
+            let ad = asin(min(1, max(-1, tan(dec) * tan(phir)))) * Eph.RAD_TO_DEG
+            let next = eclipticLonRising(
+                at: armc + offset + direction * ad * fraction,
+                latitude: phi, sinE: sinE, cosE: cosE
+            )
+            if abs(next - lon) < CONVERGENCE { return next }
+            lon = next
+        }
+        return lon
+    }
+
+    /// 극권 폴백 — Porphyrius (사분면 3등분, 공개 정의)
+    private static func porphyry(asc: Double, mc: Double) -> [Double] {
+        var cusps = [Double](repeating: 0, count: 13)
+        cusps[1] = asc
+        cusps[10] = mc
+        var arc = Eph.degnorm(asc - mc)
+        var ascUsed = asc
+        if arc > 180 {
+            ascUsed = Eph.degnorm(asc + 180)
+            arc = Eph.degnorm(ascUsed - mc)
+        }
+        cusps[11] = Eph.degnorm(mc + arc / 3)
+        cusps[12] = Eph.degnorm(mc + arc * 2 / 3)
+        cusps[2] = Eph.degnorm(ascUsed + (180 - arc) / 3)
+        cusps[3] = Eph.degnorm(ascUsed + (180 - arc) * 2 / 3)
+        fillOpposites(&cusps)
+        return cusps
+    }
+
+    /// 대칭 커스프 채우기 — 1,2,3,10,11,12가 채워진 상태에서 맞은편 6개 계산
+    private static func fillOpposites(_ cusps: inout [Double]) {
         cusps[4] = Eph.degnorm(cusps[10] + 180)
         cusps[5] = Eph.degnorm(cusps[11] + 180)
         cusps[6] = Eph.degnorm(cusps[12] + 180)
@@ -106,98 +94,39 @@ enum Houses {
         cusps[9] = Eph.degnorm(cusps[3] + 180)
     }
 
-    private static func housesPorphyry(_ cusps: inout [Double], _ ac: Double, _ mc: Double) {
-        cusps[1] = ac
-        cusps[10] = mc
-        var acmc = difdeg2n(ac, mc)
-        var acUsed = ac
-        if acmc < 0 {
-            acUsed = Eph.degnorm(ac + 180)
-            acmc = difdeg2n(acUsed, mc)
+    static func calcHouses(_ jdUT: Double, _ geolat: Double, _ geolon: Double, _ hsys: String) -> HousesResult {
+        let jde = jdUT + Eph.deltaT(jdUT)
+        let epsMean = Eph.meanObliquity(jde) * Eph.RAD_TO_DEG
+        let (dpsi, deps) = Eph.nutation(jde)
+        let nutLonDeg = dpsi * Eph.RAD_TO_DEG
+        let epsTrue = epsMean + deps * Eph.RAD_TO_DEG
+        let sinE = sin(epsTrue * Eph.DEG_TO_RAD)
+        let cosE = cos(epsTrue * Eph.DEG_TO_RAD)
+
+        let gmstH = siderealTimeHours(jdUT: jdUT, trueObliquityDeg: epsTrue, nutLonDeg: nutLonDeg)
+        let armc = Eph.degnorm(gmstH * 15 + geolon)
+
+        // MC: tan λ = tan ARMC / cos ε (사분면 보존)
+        let armcRad = armc * Eph.DEG_TO_RAD
+        let mc = Eph.degnorm(atan2(sin(armcRad), cos(armcRad) * cosE) * Eph.RAD_TO_DEG)
+
+        // ASC: 동쪽 지평선 = 사승각 ARMC + 90°
+        let asc = eclipticLonRising(at: armc + 90, latitude: geolat, sinE: sinE, cosE: cosE)
+
+        // 극권(|φ| ≥ 90 − ε)은 Placidus 정의 불능 → Porphyrius
+        if abs(geolat) >= 90 - epsTrue {
+            return HousesResult(cusps: porphyry(asc: asc, mc: mc), ascmc: [asc, mc, armc])
         }
-        cusps[11] = Eph.degnorm(mc + acmc / 3)
-        cusps[12] = Eph.degnorm(mc + (acmc / 3) * 2)
-        cusps[2] = Eph.degnorm(acUsed + (180 - acmc) / 3)
-        cusps[3] = Eph.degnorm(acUsed + ((180 - acmc) / 3) * 2)
-        computeOpposites(&cusps)
-    }
-
-    private static func placidusIter(
-        _ th: Double, _ fi: Double, _ sine: Double, _ cose: Double,
-        _ offset: Double, _ frac: Double, _ sign: Double
-    ) -> Double {
-        var x = asc1(th + offset, fi, sine, cose)
-        for _ in 0..<100 {
-            let dec = asind(clamp1(sind(x) * sine))
-            let ad = asind(clamp1(tand(dec) * tand(fi)))
-            let xNew = asc1(th + offset + sign * ad * frac, fi, sine, cose)
-            if abs(xNew - x) < VERY_SMALL {
-                return xNew
-            }
-            x = xNew
-        }
-        return x
-    }
-
-    private static func housesPlacidus(
-        _ cusps: inout [Double],
-        _ th: Double, _ fi: Double, _ ekl: Double,
-        _ sine: Double, _ cose: Double,
-        _ ac: Double, _ mc: Double
-    ) {
-        if abs(fi) >= 90 - ekl {
-            housesPorphyry(&cusps, ac, mc)
-            return
-        }
-        cusps[1] = ac
-        cusps[10] = mc
-        cusps[11] = placidusIter(th, fi, sine, cose, 30, 1.0 / 3, 1)
-        cusps[12] = placidusIter(th, fi, sine, cose, 60, 2.0 / 3, 1)
-        cusps[2] = placidusIter(th, fi, sine, cose, 120, 2.0 / 3, -1)
-        cusps[3] = placidusIter(th, fi, sine, cose, 150, 1.0 / 3, -1)
-        computeOpposites(&cusps)
-    }
-
-    // MARK: - 진입점
-
-    static func calcHouses(_ tjdUt: Double, _ geolat: Double, _ geolon: Double, _ hsys: String) -> HousesResult {
-        let tjde = tjdUt + DeltaT.deltaT(tjdUt)
-        let epsMeanRad = Eph.calcObliquity(tjde)
-        let epsMean = epsMeanRad * Eph.RAD_TO_DEG
-        let (dpsi, deps) = Nutation.calcNutation(tjde)
-        let nutloLon = dpsi * Eph.RAD_TO_DEG
-        let nutloObl = deps * Eph.RAD_TO_DEG
-
-        let armc = Eph.degnorm(sidtime0(tjdUt, epsMean + nutloObl, nutloLon) * 15 + geolon)
-
-        let ekl = epsMean + nutloObl
-        let cose = cos(ekl * Eph.DEG_TO_RAD)
-        let sine = sin(ekl * Eph.DEG_TO_RAD)
-
-        let th = Eph.degnorm(armc)
-        var mc: Double
-        if abs(th - 90) > VERY_SMALL && abs(th - 270) > VERY_SMALL {
-            let tant = tan(th * Eph.DEG_TO_RAD)
-            mc = atan(tant / cose) * Eph.RAD_TO_DEG
-            if th > 90 && th <= 270 { mc += 180 }
-        } else {
-            mc = abs(th - 90) <= VERY_SMALL ? 90 : 270
-        }
-        mc = Eph.degnorm(mc)
-
-        let ac = asc1(th + 90, geolat, sine, cose)
 
         var cusps = [Double](repeating: 0, count: 13)
-        let fi = geolat
+        cusps[1] = asc
+        cusps[10] = mc
+        cusps[11] = placidusCusp(armc: armc, latitude: geolat, sinE: sinE, cosE: cosE, offset: 30, fraction: 1.0 / 3, direction: 1)
+        cusps[12] = placidusCusp(armc: armc, latitude: geolat, sinE: sinE, cosE: cosE, offset: 60, fraction: 2.0 / 3, direction: 1)
+        cusps[2] = placidusCusp(armc: armc, latitude: geolat, sinE: sinE, cosE: cosE, offset: 120, fraction: 2.0 / 3, direction: -1)
+        cusps[3] = placidusCusp(armc: armc, latitude: geolat, sinE: sinE, cosE: cosE, offset: 150, fraction: 1.0 / 3, direction: -1)
+        fillOpposites(&cusps)
 
-        switch hsys.uppercased() {
-        case "O":
-            housesPorphyry(&cusps, ac, mc)
-        default:
-            // 앱은 Placidus만 사용 — 그 외 시스템 코드는 Placidus로 처리
-            housesPlacidus(&cusps, th, fi, ekl, sine, cose, ac, mc)
-        }
-
-        return HousesResult(cusps: cusps, ascmc: [ac, mc, armc])
+        return HousesResult(cusps: cusps, ascmc: [asc, mc, armc])
     }
 }

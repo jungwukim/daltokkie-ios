@@ -1,6 +1,9 @@
-// 골든 픽스처 검증 — saju-api lib/natal 엔진 출력과 일치 확인
-// 픽스처: saju-api/tests/golden/fixtures/natal.json (408건)
-// 비교 규칙: 천체 각도 ε=0.001°, 그 외(부호/역행/하우스/어스펙트 구성)는 완전 일치
+// 골든 픽스처 검증 — 라이선스 클린 천체력 (VSOP87B + Meeus + JPL)
+//
+// 기준 픽스처는 기존 웹 엔진(Moshier 이론)으로 생성됐고 새 구현은 다른 이론을 쓰므로
+// 비트 일치가 아닌 천문학적 허용오차로 검증한다:
+//   행성 0.01° / 달 0.02° / 키론 0.03° / 커스프·축 0.05°
+//   별자리·하우스·역행·어스펙트는 경계 슬랙을 두고 동일성 확인
 
 import XCTest
 @testable import NatalKit
@@ -48,21 +51,35 @@ final class NatalGoldenTests: XCTestCase {
 
     static let fixture: Fixture = {
         guard let url = Bundle.module.url(forResource: "natal", withExtension: "json") else {
-            fatalError("natal.json 리소스 없음 — 번들 내용: \(Bundle.module.paths(forResourcesOfType: "json", inDirectory: nil))")
+            fatalError("natal.json 리소스 없음")
         }
         do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(Fixture.self, from: data)
+            return try JSONDecoder().decode(Fixture.self, from: Data(contentsOf: url))
         } catch {
             fatalError("natal.json 디코딩 실패: \(error)")
         }
     }()
 
-    private static let epsilon = 0.001
+    // 천체별 황경 허용오차 (deg)
+    private static func lonTolerance(_ id: String) -> Double {
+        switch id {
+        case "Moon": return 0.02
+        case "Chiron": return 0.03
+        case "Fortuna": return 0.07   // ASC + 달 - 태양 합성
+        default: return 0.01
+        }
+    }
+    private static let cuspTolerance = 0.05
+    private static let aspectMaxOrbs: [String: Double] = [
+        "conjunction": 8, "sextile": 6, "square": 8, "trine": 8, "opposition": 8,
+    ]
+    private static let aspectAngles: [String: Double] = [
+        "conjunction": 0, "sextile": 60, "square": 90, "trine": 120, "opposition": 180,
+    ]
 
-    private func angleClose(_ a: Double, _ b: Double) -> Bool {
-        let d = abs(a - b)
-        return min(d, 360 - d) < Self.epsilon
+    private func angleDiff(_ a: Double, _ b: Double) -> Double {
+        let d = abs(a - b).truncatingRemainder(dividingBy: 360)
+        return min(d, 360 - d)
     }
 
     private func describe(_ input: Fixture.Input) -> String {
@@ -79,18 +96,17 @@ final class NatalGoldenTests: XCTestCase {
         )
     }
 
-    func test출생차트_골든픽스처_전건일치() throws {
+    func test출생차트_골든픽스처_허용오차일치() throws {
         var failures: [String] = []
+        var maxDiffByBody: [String: Double] = [:]
+        var maxCuspDiff = 0.0
 
         for c in Self.fixture.cases {
-            // 에러 케이스(DST gap): throw가 정답
             if c.output.error != nil {
                 do {
                     _ = try NatalEngine.calculateNatal(makeInput(c.input))
                     failures.append("\(describe(c.input)) [\(c.tag)]: 에러를 던져야 하는데 성공함")
-                } catch {
-                    // 정답
-                }
+                } catch { /* 정답 */ }
                 continue
             }
 
@@ -103,45 +119,63 @@ final class NatalGoldenTests: XCTestCase {
             }
 
             guard let expPlanets = c.output.planets else { continue }
+            let expCusps = c.output.houses ?? []
 
-            // 행성
+            // 행성: 황경 허용오차 + 별자리/하우스/역행 (경계 슬랙)
             if chart.planets.count != expPlanets.count {
-                failures.append("\(describe(c.input)) [\(c.tag)]: 행성 수 \(chart.planets.count) vs \(expPlanets.count)")
+                failures.append("\(describe(c.input)): 행성 수 \(chart.planets.count) vs \(expPlanets.count)")
                 continue
             }
             for (got, exp) in zip(chart.planets, expPlanets) {
-                if got.id != exp.id {
+                guard got.id == exp.id else {
                     failures.append("\(describe(c.input)): 행성 순서 \(got.id) vs \(exp.id)")
                     break
                 }
-                if !angleClose(got.longitude, exp.longitude) {
-                    failures.append("\(describe(c.input)): \(got.id) 황경 \(got.longitude) vs \(exp.longitude)")
+                let tol = Self.lonTolerance(got.id)
+                let diff = angleDiff(got.longitude, exp.longitude)
+                maxDiffByBody[got.id] = max(maxDiffByBody[got.id] ?? 0, diff)
+                if diff > tol {
+                    failures.append("\(describe(c.input)): \(got.id) 황경 차이 \(String(format: "%.4f", diff))° (\(got.longitude) vs \(exp.longitude))")
                     break
                 }
+                // 별자리: 기대 황경이 경계에서 tol 안이면 슬랙
                 if got.sign != exp.sign {
-                    failures.append("\(describe(c.input)): \(got.id) 별자리 \(got.sign) vs \(exp.sign)")
-                    break
+                    let toBoundary = abs(exp.longitude.truncatingRemainder(dividingBy: 30))
+                    let boundaryDist = min(toBoundary, 30 - toBoundary)
+                    if boundaryDist > tol {
+                        failures.append("\(describe(c.input)): \(got.id) 별자리 \(got.sign) vs \(exp.sign) (경계距 \(String(format: "%.3f", boundaryDist))°)")
+                        break
+                    }
                 }
-                if got.isRetrograde != exp.retrograde {
-                    failures.append("\(describe(c.input)): \(got.id) 역행 \(got.isRetrograde) vs \(exp.retrograde)")
-                    break
-                }
+                // 하우스: 기대 황경이 커스프에서 (tol+커스프tol) 안이면 슬랙
                 if got.house != exp.house {
-                    failures.append("\(describe(c.input)): \(got.id) 하우스 \(String(describing: got.house)) vs \(String(describing: exp.house))")
+                    let nearCusp = expCusps.contains { angleDiff(exp.longitude, $0) <= tol + Self.cuspTolerance }
+                    if !nearCusp {
+                        failures.append("\(describe(c.input)): \(got.id) 하우스 \(String(describing: got.house)) vs \(String(describing: exp.house))")
+                        break
+                    }
+                }
+                // 역행: 정류(stationary) 부근만 슬랙
+                if got.isRetrograde != exp.retrograde && abs(got.speed) > 0.02 {
+                    failures.append("\(describe(c.input)): \(got.id) 역행 \(got.isRetrograde) vs \(exp.retrograde) (speed \(got.speed))")
                     break
                 }
             }
 
             // 하우스 커스프
-            if let expHouses = c.output.houses {
+            if !expCusps.isEmpty {
                 let gotCusps = chart.houses.map(\.cuspLongitude)
-                if gotCusps.count != expHouses.count {
-                    failures.append("\(describe(c.input)): 하우스 수 \(gotCusps.count) vs \(expHouses.count)")
-                } else {
-                    for (i, (got, exp)) in zip(gotCusps, expHouses).enumerated() where !angleClose(got, exp) {
-                        failures.append("\(describe(c.input)): 커스프\(i + 1) \(got) vs \(exp)")
-                        break
+                if gotCusps.count == expCusps.count {
+                    for (got, exp) in zip(gotCusps, expCusps) {
+                        let d = angleDiff(got, exp)
+                        maxCuspDiff = max(maxCuspDiff, d)
+                        if d > Self.cuspTolerance {
+                            failures.append("\(describe(c.input)): 커스프 차이 \(String(format: "%.4f", d))° (\(got) vs \(exp))")
+                            break
+                        }
                     }
+                } else {
+                    failures.append("\(describe(c.input)): 하우스 수 \(gotCusps.count) vs \(expCusps.count)")
                 }
             }
 
@@ -151,32 +185,53 @@ final class NatalGoldenTests: XCTestCase {
                     failures.append("\(describe(c.input)): angles 누락")
                     continue
                 }
-                if !angleClose(gotAngles.asc.longitude, expAngles.asc) {
+                if angleDiff(gotAngles.asc.longitude, expAngles.asc) > Self.cuspTolerance {
                     failures.append("\(describe(c.input)): ASC \(gotAngles.asc.longitude) vs \(expAngles.asc)")
                 }
-                if !angleClose(gotAngles.mc.longitude, expAngles.mc) {
+                if angleDiff(gotAngles.mc.longitude, expAngles.mc) > Self.cuspTolerance {
                     failures.append("\(describe(c.input)): MC \(gotAngles.mc.longitude) vs \(expAngles.mc)")
                 }
             } else if chart.angles != nil {
                 failures.append("\(describe(c.input)): angles는 null이어야 함 (시간미상)")
             }
 
-            // 어스펙트 — (p1,p2,type) 집합 일치 + orb 오차 ≤0.1
+            // 어스펙트 — orb 경계 슬랙: 기대 황경으로 재계산한 orb가 maxOrb±0.06 안이면 허용
             if let expAspects = c.output.aspects {
+                let expLon = Dictionary(uniqueKeysWithValues: expPlanets.map { ($0.id, $0.longitude) })
                 let gotKeys = Dictionary(uniqueKeysWithValues: chart.aspects.map { ("\($0.planet1)|\($0.planet2)|\($0.type)", $0.orb) })
                 let expKeys = Dictionary(uniqueKeysWithValues: expAspects.map { ("\($0.p1)|\($0.p2)|\($0.type)", $0.orb) })
-                if Set(gotKeys.keys) != Set(expKeys.keys) {
-                    let missing = Set(expKeys.keys).subtracting(gotKeys.keys)
-                    let extra = Set(gotKeys.keys).subtracting(expKeys.keys)
-                    failures.append("\(describe(c.input)): 어스펙트 차이 — 누락 \(missing.prefix(2)), 초과 \(extra.prefix(2))")
-                } else {
-                    for (key, expOrb) in expKeys where abs(gotKeys[key]! - expOrb) > 0.11 {
-                        failures.append("\(describe(c.input)): \(key) orb \(gotKeys[key]!) vs \(expOrb)")
+
+                func nearOrbBoundary(_ key: String) -> Bool {
+                    let parts = key.split(separator: "|").map(String.init)
+                    guard parts.count == 3,
+                          let l1 = expLon[parts[0]], let l2 = expLon[parts[1]],
+                          let angle = Self.aspectAngles[parts[2]],
+                          let maxOrb = Self.aspectMaxOrbs[parts[2]] else { return false }
+                    let orb = abs(angleDiff(l1, l2) - angle)
+                    return abs(orb - maxOrb) <= 0.06
+                }
+
+                for key in Set(expKeys.keys).subtracting(gotKeys.keys) where !nearOrbBoundary(key) {
+                    failures.append("\(describe(c.input)): 어스펙트 누락 \(key)")
+                    break
+                }
+                for key in Set(gotKeys.keys).subtracting(expKeys.keys) where !nearOrbBoundary(key) {
+                    failures.append("\(describe(c.input)): 어스펙트 초과 \(key)")
+                    break
+                }
+                for (key, expOrb) in expKeys {
+                    if let gotOrb = gotKeys[key], abs(gotOrb - expOrb) > 0.15 {
+                        failures.append("\(describe(c.input)): \(key) orb \(gotOrb) vs \(expOrb)")
                         break
                     }
                 }
             }
         }
+
+        let stats = maxDiffByBody.sorted { $0.key < $1.key }
+            .map { "\($0.key)=\(String(format: "%.4f", $0.value))°" }
+            .joined(separator: ", ")
+        print("📐 최대 황경 차이: \(stats) / 커스프 최대 \(String(format: "%.4f", maxCuspDiff))°")
 
         XCTAssertEqual(failures.count, 0, "불일치 \(failures.count)건 — 처음 10건:\n" + failures.prefix(10).joined(separator: "\n"))
     }

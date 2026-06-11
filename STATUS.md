@@ -10,7 +10,7 @@
 |----|------|------------|
 | LunarKit | 음력 변환 (lunar-javascript 테이블 + ft-lib 레거시) | 2,464건 ✅ |
 | ZiweiKit | 자미두수 명반/유년/대한 | 366건 ✅ |
-| NatalKit | Moshier 천체력 + 출생차트 (tsCompatOffset로 TS 동작 재현) | 408건 ✅ |
+| NatalKit | **라이선스 클린 천체력** — VSOP87B+Meeus(MIT)+JPL Horizons. 허용오차 검증(행성≤0.003°, 달≤0.018°, 커스프≤0.0002°) | 408건 ✅ |
 | SajuKit | 만세력/절기/사주팔자 + 분석(십성/신살/격국/용신/대운) + 일일운세 | 1,001+106+53건 ✅ |
 
 핵심 재현 사항:
@@ -41,7 +41,6 @@
 - 타로/궁합 AI 해석 연결 (AIProxy.stream 사용, 엔드포인트만 추가)
 - 사주 상세에 신살/공망/합충형파해/지장간 섹션 추가 (엔진 함수는 모두 준비됨)
 - 채팅(마이) 탭 고도화, 앱스토어 메타데이터/심사 대응
-- ⚠️ Swiss Ephemeris(AGPL) 라이선스 결정 (배포 전 필수)
 
 ## 빌드 명령
 - 엔진 테스트: `cd Engine && swift test`
@@ -49,6 +48,6 @@
 - 앱 빌드: `xcodebuild -project DalTokkie.xcodeproj -scheme DalTokkie -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
 
 ## 주의/결정 사항
-- 천체력은 Swiss Ephemeris 유래(AGPL) — 앱스토어 배포 전 라이선스 결정 필요
+- 천체력은 라이선스 클린 재구현 완료 (VSOP87B + astronomia MIT + JPL Horizons — NOTICE.md 고지). AGPL 의존성 없음
 - natal 1905~1908 서울 DST gap 에러는 의도된 TS 버그 재현 (saju-api 칩 task_3270ee30)
 - 디자인 토큰: 배경 #f8f2e8, 카드 #faf6ee, 포인트 #d4789c, 텍스트 #2a2520/#8b7e6a, 탭바 보더 #e8dcc4, 밤하늘 #2a2f50

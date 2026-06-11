@@ -1,12 +1,14 @@
-// 천체 위치 통합 계산 — ephemeris/index.ts 포팅
+// 천체 위치 통합 — 외관 황도좌표(of date) 계산 파이프라인
+// VSOP87B(J2000) → 지심 → 황도 세차(J2000→date) → 장동 → 외관 황경
+// (기하학적 위치 기준 — 광행차 미적용. 표시 정밀도 0.1° 대비 충분)
 
 import Foundation
 
 struct PlanetResult {
-    let longitude: Double
-    let latitude: Double
-    let distance: Double
-    let longitudeSpeed: Double
+    let longitude: Double        // 외관 황경 (deg, of date)
+    let latitude: Double         // 황위 (deg)
+    let distance: Double         // AU (참고용)
+    let longitudeSpeed: Double   // deg/day
     let latitudeSpeed: Double
     let distanceSpeed: Double
 }
@@ -17,105 +19,112 @@ enum Ephemeris {
     static let SE_MEAN_NODE = 10
     static let SE_CHIRON = 15
 
-    private static let bodyToIpli: [Int: Int] = [
-        0: 0, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
+    private static let vsopNames: [Int: String] = [
+        2: "mercury", 3: "venus", 4: "mars", 5: "jupiter",
+        6: "saturn", 7: "uranus", 8: "neptune",
     ]
-
-    /// 장동 적용 (6원소 제자리 변환)
-    private static func nutate(_ p: inout [Double], _ dpsi: Double, _ deps: Double, _ meanObliquity: Double) {
-        let soe = sin(meanObliquity)
-        let coe = cos(meanObliquity)
-        let A = dpsi * coe
-        let B = dpsi * soe
-
-        let x0 = p[0] - A * p[1] - B * p[2]
-        let x1 = A * p[0] + p[1] - deps * p[2]
-        let x2 = B * p[0] + deps * p[1] + p[2]
-        p[0] = x0; p[1] = x1; p[2] = x2
-
-        if p.count >= 6 {
-            let x3 = p[3] - A * p[4] - B * p[5]
-            let x4 = A * p[3] + p[4] - deps * p[5]
-            let x5 = B * p[3] + deps * p[4] + p[5]
-            p[3] = x3; p[4] = x4; p[5] = x5
-        }
-    }
-
-    /// 적도 J2000 → 황도(of date) 극좌표
-    private static func equ2000ToEclDate(_ xeqIn: [Double], _ tjde: Double) -> [Double] {
-        var xeq = xeqIn
-        let meanEps = Eph.calcObliquity(tjde)
-        let (dpsi, deps) = Nutation.calcNutation(tjde)
-        let trueEps = meanEps + deps
-
-        Eph.precess(&xeq, tjde, -1)
-        if xeq.count >= 6 {
-            var vel = [xeq[3], xeq[4], xeq[5]]
-            Eph.precess(&vel, tjde, -1)
-            xeq[3] = vel[0]; xeq[4] = vel[1]; xeq[5] = vel[2]
-        }
-
-        nutate(&xeq, dpsi, deps, meanEps)
-        let eclCart = Eph.coortrf2(xeq, trueEps)
-        return Eph.cartpol(eclCart)
-    }
 
     static func julday(_ y: Int, _ m: Int, _ d: Int, _ h: Double) -> Double {
         Eph.julday(y, m, d, h)
     }
 
+    /// 일심 구면(J2000) → 직교
+    private static func rect(_ s: (L: Double, B: Double, R: Double)) -> (x: Double, y: Double, z: Double) {
+        let cb = cos(s.B)
+        return (s.R * cb * cos(s.L), s.R * cb * sin(s.L), s.R * sin(s.B))
+    }
+
+    /// 본체의 지심 외관 황경/황위/거리 (deg, deg, AU) — 단일 시점
+    private static func apparentEcliptic(body: Int, jde: Double) throws -> (lon: Double, lat: Double, dist: Double) {
+        let earth = rect(CleanBodies.vsop87("earth", jde: jde))
+
+        let geo: (x: Double, y: Double, z: Double)
+        switch body {
+        case SE_SUN:
+            geo = (-earth.x, -earth.y, -earth.z)
+        case 9:   // 명왕성
+            let p = rect(CleanBodies.plutoHeliocentric(jde: jde))
+            geo = (p.x - earth.x, p.y - earth.y, p.z - earth.z)
+        default:
+            guard let name = vsopNames[body] else {
+                throw NatalError.unsupportedBody(body)
+            }
+            let p = rect(CleanBodies.vsop87(name, jde: jde))
+            geo = (p.x - earth.x, p.y - earth.y, p.z - earth.z)
+        }
+
+        let lonJ2000 = Eph.radnorm(atan2(geo.y, geo.x))
+        let distXY = (geo.x * geo.x + geo.y * geo.y).squareRoot()
+        let latJ2000 = atan2(geo.z, distXY)
+        let dist = (distXY * distXY + geo.z * geo.z).squareRoot()
+
+        // J2000 → of date 세차 + 장동(황경)
+        let epochTo = 2000.0 + (jde - Eph.J2000) / 365.25
+        let precessor = EclipticPrecessor(fromJ2000ToEpoch: epochTo)
+        let ofDate = precessor.precess(lon: lonJ2000, lat: latJ2000)
+        let (dpsi, _) = Eph.nutation(jde)
+
+        return (
+            Eph.degnorm((ofDate.lon + dpsi) * Eph.RAD_TO_DEG),
+            ofDate.lat * Eph.RAD_TO_DEG,
+            dist
+        )
+    }
+
+    /// 달 외관 황경 (Meeus는 of-date 평균 분점 — 장동만 추가)
+    private static func moonApparent(jde: Double) -> (lon: Double, lat: Double, dist: Double) {
+        let pos = CleanBodies.moonPosition(jde: jde)
+        let (dpsi, _) = Eph.nutation(jde)
+        let lon = Eph.degnorm((pos.lon + dpsi) * Eph.RAD_TO_DEG)
+        return (lon, pos.lat * Eph.RAD_TO_DEG, pos.rangeKm / 149597870.7)
+    }
+
+    private static func wrappedDelta(_ a: Double, _ b: Double) -> Double {
+        var d = a - b
+        if d > 180 { d -= 360 }
+        if d < -180 { d += 360 }
+        return d
+    }
+
     static func calcPlanet(_ jd: Double, _ body: Int) throws -> PlanetResult {
-        let tjde = jd + DeltaT.deltaT(jd)
+        let tjde = jd + Eph.deltaT(jd)
 
         if body == SE_MEAN_NODE {
-            let node = MeanNode.calcMeanNodeFull(tjde)
-            return PlanetResult(
-                longitude: node.longitude, latitude: 0, distance: 0.002569,
-                longitudeSpeed: node.speed, latitudeSpeed: 0, distanceSpeed: 0
-            )
+            let lon = CleanBodies.meanNodeLongitude(jde: tjde)
+            let lonPrev = CleanBodies.meanNodeLongitude(jde: tjde - 0.1)
+            let speed = wrappedDelta(lon, lonPrev) / 0.1
+            return PlanetResult(longitude: lon, latitude: 0, distance: 0.002569,
+                                longitudeSpeed: speed, latitudeSpeed: 0, distanceSpeed: 0)
         }
 
         if body == SE_CHIRON {
-            let chiron = try Chiron.calcChiron(jd)
-            return PlanetResult(
-                longitude: chiron.longitude, latitude: 0, distance: 0,
-                longitudeSpeed: chiron.speed, latitudeSpeed: 0, distanceSpeed: 0
-            )
+            let c = try CleanBodies.chiron(jd: jd)
+            return PlanetResult(longitude: c.longitude, latitude: 0, distance: 0,
+                                longitudeSpeed: c.speed, latitudeSpeed: 0, distanceSpeed: 0)
         }
 
         if body == SE_MOON {
-            let xp = MoonCalculator.calcMoon(jd)
-            let polar = equ2000ToEclDate(xp, tjde)
+            let dt = 0.01
+            let now = moonApparent(jde: tjde)
+            let next = moonApparent(jde: tjde + dt)
+            let prev = moonApparent(jde: tjde - dt)
             return PlanetResult(
-                longitude: Eph.degnorm(polar[0] * Eph.RAD_TO_DEG),
-                latitude: polar[1] * Eph.RAD_TO_DEG,
-                distance: polar[2],
-                longitudeSpeed: polar[3] * Eph.RAD_TO_DEG,
-                latitudeSpeed: polar[4] * Eph.RAD_TO_DEG,
-                distanceSpeed: polar[5]
+                longitude: now.lon, latitude: now.lat, distance: now.dist,
+                longitudeSpeed: wrappedDelta(next.lon, prev.lon) / (2 * dt),
+                latitudeSpeed: (next.lat - prev.lat) / (2 * dt),
+                distanceSpeed: (next.dist - prev.dist) / (2 * dt)
             )
         }
 
-        guard let ipli = bodyToIpli[body] else {
-            throw NatalError.unsupportedBody(body)
-        }
-
-        let result = PlanetCalculator.moshplan(jd, ipli)
-        var xgeo = [Double](repeating: 0, count: 6)
-        if body == SE_SUN {
-            for i in 0..<6 { xgeo[i] = -result.xe[i] }
-        } else {
-            for i in 0..<6 { xgeo[i] = result.xp[i] - result.xe[i] }
-        }
-
-        let polar = equ2000ToEclDate(xgeo, tjde)
+        let dt = 0.05
+        let now = try apparentEcliptic(body: body, jde: tjde)
+        let next = try apparentEcliptic(body: body, jde: tjde + dt)
+        let prev = try apparentEcliptic(body: body, jde: tjde - dt)
         return PlanetResult(
-            longitude: Eph.degnorm(polar[0] * Eph.RAD_TO_DEG),
-            latitude: polar[1] * Eph.RAD_TO_DEG,
-            distance: polar[2],
-            longitudeSpeed: polar[3] * Eph.RAD_TO_DEG,
-            latitudeSpeed: polar[4] * Eph.RAD_TO_DEG,
-            distanceSpeed: polar[5]
+            longitude: now.lon, latitude: now.lat, distance: now.dist,
+            longitudeSpeed: wrappedDelta(next.lon, prev.lon) / (2 * dt),
+            latitudeSpeed: (next.lat - prev.lat) / (2 * dt),
+            distanceSpeed: (next.dist - prev.dist) / (2 * dt)
         )
     }
 }

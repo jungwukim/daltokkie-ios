@@ -7,9 +7,9 @@ struct MainTabView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                DT.bg.ignoresSafeArea()
+        ZStack {
+            DT.bg.ignoresSafeArea()
+            Group {
                 switch appState.selectedTab {
                 case .home: HomeView()
                 case .talisman: TalismanView()
@@ -18,11 +18,12 @@ struct MainTabView: View {
                 case .my: MyView()
                 }
             }
-            .frame(maxHeight: .infinity)
-
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        // 탭바를 safe area 하단에 고정 — 표준 방식, 홈 인디케이터까지 배경 채움
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             BottomTabBar()
         }
-        .background(DT.bg.ignoresSafeArea())
     }
 }
 
@@ -58,14 +59,17 @@ struct BottomTabBar: View {
                 ForEach(rightItems, id: \.tab) { tabButton($0) }
             }
             .frame(height: barHeight)
+            .frame(maxWidth: .infinity)
             .background(
+                // 배경을 safe area 아래(홈 인디케이터)까지 확장 — 탭바가 바닥에 딱 붙음
                 UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
                     .fill(DT.card)
                     .overlay(
                         UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
                             .stroke(DT.line, lineWidth: 1)
                     )
-                    .ignoresSafeArea(edges: .bottom)
+                    .ignoresSafeArea(edges: .bottom),
+                alignment: .top
             )
 
             // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 절반 돌출

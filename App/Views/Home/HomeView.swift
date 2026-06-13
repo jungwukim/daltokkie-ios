@@ -17,20 +17,18 @@ struct HomeView: View {
             header
 
             if let bundle {
-                GeometryReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 26) {
-                            heroBanner(bundle)
-                            luckyItemsSection(bundle)
-                            conditionSection(bundle)
-                            ctaBanner(bundle)
-                        }
-                        .padding(.horizontal, DT.pagePadding)
-                        .padding(.top, 6)
-                        .padding(.bottom, 18)
-                        .frame(width: proxy.size.width)   // 가로 폭 화면 고정 (가로 스크롤·밀림 방지)
+                ScrollView {
+                    VStack(spacing: 26) {
+                        heroBanner(bundle)
+                        luckyItemsSection(bundle)
+                        conditionSection(bundle)
+                        ctaBanner(bundle)
                     }
+                    .padding(.horizontal, DT.pagePadding)
+                    .padding(.top, 6)
+                    .padding(.bottom, 18)
                 }
+                .frame(maxWidth: .infinity)
             } else {
                 Spacer()
                 Text("운세를 계산할 수 없어요\n\(appState.lastError ?? "")")

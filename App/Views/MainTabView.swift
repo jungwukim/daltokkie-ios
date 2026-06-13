@@ -1,106 +1,51 @@
-// 메인 탭 셸 — 하단 5탭 (홈/부적함/달토끼·운세/타로/마이), 중앙 로고 돌출
-// 웹 bottom-tab-bar.tsx 대응
+// 메인 탭 셸 — iOS 표준 TabView. 중앙 운세 탭도 일반 탭 아이템(토끼 아이콘).
 
 import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
 
-    var body: some View {
-        ZStack {
-            DT.bg.ignoresSafeArea()
-            Group {
-                switch appState.selectedTab {
-                case .home: HomeView()
-                case .talisman: TalismanView()
-                case .fortune: FortuneMenuView()
-                case .tarot: TarotView()
-                case .my: MyView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    init() {
+        // 탭바 외형을 크래프트지 톤으로 (UITabBarAppearance)
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(DT.card)
+        appearance.shadowColor = UIColor(DT.line)
+
+        let normal = UIColor(Color(hex: 0x9C8E7A))
+        let selected = UIColor(DT.accent)
+        for item in [appearance.stackedLayoutAppearance, appearance.inlineLayoutAppearance, appearance.compactInlineLayoutAppearance] {
+            item.normal.iconColor = normal
+            item.normal.titleTextAttributes = [.foregroundColor: normal]
+            item.selected.iconColor = selected
+            item.selected.titleTextAttributes = [.foregroundColor: selected]
         }
-        // 탭바를 safe area 하단에 고정 — 표준 방식, 홈 인디케이터까지 배경 채움
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            BottomTabBar()
-        }
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
-}
-
-struct BottomTabBar: View {
-    @EnvironmentObject var appState: AppState
-
-    private struct Item {
-        let tab: AppState.Tab
-        let icon: String
-        let label: String
-    }
-
-    // 시안: 홈(집)/부적함(보물상자)/중앙 토끼/타로(카드)/마이(고양이)
-    private let leftItems: [Item] = [
-        Item(tab: .home, icon: "house.fill", label: "홈"),
-        Item(tab: .talisman, icon: "archivebox.fill", label: "부적함"),
-    ]
-    private let rightItems: [Item] = [
-        Item(tab: .tarot, icon: "rectangle.portrait.on.rectangle.portrait.fill", label: "타로"),
-        Item(tab: .my, icon: "cat", label: "마이"),
-    ]
-
-    private let barHeight: CGFloat = 58
-    private let badgeSize: CGFloat = 64
 
     var body: some View {
-        // 탭바 본체(고정 높이). 배지는 본체 위에 overlay로 절반 돌출.
-        // safeAreaInset(MainTabView)이 이 뷰를 화면 하단에 고정하고 배경을 홈 인디케이터까지 깐다.
-        HStack(spacing: 0) {
-            ForEach(leftItems, id: \.tab) { tabButton($0) }
-            Color.clear.frame(maxWidth: .infinity)   // 중앙 자리 (배지가 들어옴)
-            ForEach(rightItems, id: \.tab) { tabButton($0) }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: barHeight)
-        .background(
-            DT.card
-                .overlay(Rectangle().fill(DT.line).frame(height: 1), alignment: .top)
-                .ignoresSafeArea(edges: .bottom)   // 배경을 홈 인디케이터까지 — 콘텐츠 비침 차단
-        )
-        .overlay(alignment: .top) {
-            // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 절반 돌출
-            Button {
-                appState.selectedTab = .fortune
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(DT.card)
-                        .frame(width: badgeSize + 8, height: badgeSize + 8)
-                        .overlay(Circle().stroke(DT.strokeBrown.opacity(0.5), lineWidth: 1.5))
-                    Circle()
-                        .fill(DT.night)
-                        .frame(width: badgeSize, height: badgeSize)
-                        .shadow(color: .black.opacity(0.18), radius: 5, y: 2)
-                    Image("dal-tokkie-icon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: badgeSize * 0.7)
-                }
-            }
-            .alignmentGuide(.top) { $0[VerticalAlignment.center] }   // 배지 중심이 탭바 상단선에
-        }
-    }
+        TabView(selection: $appState.selectedTab) {
+            HomeView()
+                .tabItem { Label("홈", systemImage: "house.fill") }
+                .tag(AppState.Tab.home)
 
-    private func tabButton(_ item: Item) -> some View {
-        let active = appState.selectedTab == item.tab
-        return Button {
-            appState.selectedTab = item.tab
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: item.icon)
-                    .font(.system(size: 18))
-                Text(item.label)
-                    .font(DT.sans(10, .medium))
-            }
-            .foregroundStyle(active ? DT.accent : Color(hex: 0x9C8E7A))
-            .frame(maxWidth: .infinity)
+            TalismanView()
+                .tabItem { Label("부적함", systemImage: "archivebox.fill") }
+                .tag(AppState.Tab.talisman)
+
+            FortuneMenuView()
+                .tabItem { Label("운세", image: "tab-rabbit") }
+                .tag(AppState.Tab.fortune)
+
+            TarotView()
+                .tabItem { Label("타로", systemImage: "rectangle.portrait.on.rectangle.portrait.fill") }
+                .tag(AppState.Tab.tarot)
+
+            MyView()
+                .tabItem { Label("마이", systemImage: "cat") }
+                .tag(AppState.Tab.my)
         }
+        .tint(DT.accent)
     }
 }

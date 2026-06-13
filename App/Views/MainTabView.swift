@@ -45,47 +45,51 @@ struct BottomTabBar: View {
         Item(tab: .my, icon: "cat", label: "마이"),
     ]
 
+    private let barHeight: CGFloat = 58
+    private let badgeSize: CGFloat = 64
+
     var body: some View {
-        // 양옆 4개 아이콘은 같은 높이, 중앙은 빈 자리 — 배지는 overlay로 돌출
-        HStack(spacing: 0) {
-            ForEach(leftItems, id: \.tab) { tabButton($0) }
-            Color.clear.frame(maxWidth: .infinity)   // 중앙 자리
-            ForEach(rightItems, id: \.tab) { tabButton($0) }
-        }
-        .padding(.top, 12)
-        .padding(.bottom, 2)
-        .padding(.horizontal, 6)
-        .background(
-            UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                .fill(DT.card)
-                .overlay(
-                    UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                        .stroke(DT.line, lineWidth: 1)
-                )
-                .ignoresSafeArea(edges: .bottom)
-        )
-        .overlay(alignment: .top) {
-            // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 돌출
+        // 탭바 본체(고정 높이) 위에 ZStack으로 배지를 얹음 — 배지가 위로 절반 돌출
+        ZStack(alignment: .top) {
+            // 탭바 본체
+            HStack(spacing: 0) {
+                ForEach(leftItems, id: \.tab) { tabButton($0) }
+                Color.clear.frame(maxWidth: .infinity)   // 중앙 자리 (배지가 들어옴)
+                ForEach(rightItems, id: \.tab) { tabButton($0) }
+            }
+            .frame(height: barHeight)
+            .background(
+                UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
+                    .fill(DT.card)
+                    .overlay(
+                        UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
+                            .stroke(DT.line, lineWidth: 1)
+                    )
+                    .ignoresSafeArea(edges: .bottom)
+            )
+
+            // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 절반 돌출
             Button {
                 appState.selectedTab = .fortune
             } label: {
                 ZStack {
                     Circle()
                         .fill(DT.card)
-                        .frame(width: 88, height: 88)
+                        .frame(width: badgeSize + 8, height: badgeSize + 8)
                         .overlay(Circle().stroke(DT.strokeBrown.opacity(0.5), lineWidth: 1.5))
                     Circle()
                         .fill(DT.night)
-                        .frame(width: 78, height: 78)
+                        .frame(width: badgeSize, height: badgeSize)
                         .shadow(color: .black.opacity(0.18), radius: 5, y: 2)
                     Image("dal-tokkie-icon")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 56)
+                        .frame(width: badgeSize * 0.7)
                 }
             }
-            .offset(y: -34)   // 배지 상단이 탭바 위로, 하단은 탭바에 걸침
+            .offset(y: -(badgeSize + 8) / 2 + 10)   // 배지 절반이 탭바 위로
         }
+        .frame(height: barHeight)   // 탭바가 차지하는 레이아웃 높이는 본체 높이만 (배지 돌출분은 영역 밖 그림)
     }
 
     private func tabButton(_ item: Item) -> some View {

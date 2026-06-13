@@ -28,7 +28,7 @@ struct HomeView: View {
                     .padding(.top, 6)
                     .padding(.bottom, 18)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Spacer()
                 Text("운세를 계산할 수 없어요\n\(appState.lastError ?? "")")
@@ -38,6 +38,7 @@ struct HomeView: View {
                 Spacer()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showLuckyDetail) {
             if let bundle { LuckyIndexDetailView(bundle: bundle) }
         }

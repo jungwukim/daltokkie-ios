@@ -57,25 +57,25 @@ struct ConditionCard: View {
     let item: ConditionItem
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             Text(item.title)
-                .font(DT.sans(10.5, .semibold))
+                .font(DT.sans(11, .semibold))
                 .foregroundStyle(DT.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            LuckyIconView(assetName: item.asset, fallbackSymbol: "sparkles", size: 40)
-            StarRatingView(value: HomeConditions.stars(item.score), size: 9)
-            // 게이지 바 (GeometryReader 미사용 — HStack 높이 안정)
-            Capsule()
-                .fill(DT.line.opacity(0.5))
-                .frame(height: 4)
-                .overlay(alignment: .leading) {
-                    GeometryReader { geo in
-                        Capsule()
-                            .fill(item.gaugeColor)
-                            .frame(width: geo.size.width * CGFloat(max(0, min(100, item.score))) / 100)
-                    }
+            LuckyIconView(assetName: item.asset, fallbackSymbol: "sparkles", size: 46)
+            StarRatingView(value: HomeConditions.stars(item.score), size: 10)
+            // 게이지 바 — GeometryReader를 고정 높이 컨테이너 안에 (높이 안정)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(DT.line.opacity(0.45))
+                    Capsule()
+                        .fill(item.gaugeColor)
+                        .frame(width: geo.size.width * CGFloat(max(5, min(100, item.score))) / 100)
                 }
+            }
+            .frame(height: 4)
+            .padding(.horizontal, 4)
         }
         .padding(.vertical, 11)
         .padding(.horizontal, 3)

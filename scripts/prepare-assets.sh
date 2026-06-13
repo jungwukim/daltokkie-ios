@@ -42,6 +42,35 @@ add_image "moon-window" "$SRC_PUBLIC/moon-window.png"
 add_image "rabbit-master" "$SRC_PUBLIC/rabbit-master.png"
 add_image "tarot-back" "$SRC_PUBLIC/tarot/card-back.webp"
 
+echo "── 행운 일러스트 아이콘 (색깔/장소/방향/운세아이템, 360px, 한글 키 유지)"
+ICONS="$SRC_DESIGN/아이콘"
+# 색깔 25종: 01_초록 → color-초록
+for f in "$ICONS/색깔"/*.png; do
+  base=$(basename "$f" .png)
+  name="${base#*_}"                      # 01_초록 → 초록
+  add_image "color-${name}" "$f" 360
+done
+# 방향 10종: 01_북쪽 / 03-동쪽 → dir-북쪽 (구분자 혼용 처리)
+for f in "$ICONS/방향"/*.png; do
+  base=$(basename "$f" .png)
+  name="${base#*[_-]}"                   # 접두 번호+구분자 제거
+  add_image "dir-${name}" "$f" 360
+done
+# 장소 24종: 06-레스토랑 → place-레스토랑
+for f in "$ICONS/장소"/*.png; do
+  base=$(basename "$f" .png)
+  name="${base#*-}"
+  add_image "place-${name}" "$f" 360
+done
+# 운세아이템 10종: 운세아이템-01 → item-01
+for f in "$ICONS/운세아이템"/*.png; do
+  base=$(basename "$f" .png)
+  num="${base##*-}"                      # 01
+  add_image "item-${num}" "$f" 360
+done
+add_image "dal-tokkie-icon-ill" "$ICONS/달토끼 아이콘.png" 200
+add_image "carrot-ill" "$ICONS/당근.png" 200
+
 echo "── 캐릭터/배경 (1000px 다운스케일)"
 add_image "char-wolya" "$SRC_DESIGN/달토끼-캐릭터-월야.png" 1000
 add_image "char-baekhwa" "$SRC_DESIGN/달토끼-캐릭터-백화.png" 1000

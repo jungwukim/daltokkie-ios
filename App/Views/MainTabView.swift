@@ -59,7 +59,9 @@ struct MainTabView: View {
 /// 중앙 달토끼 돌출 배지 — 시안: 라벨 없이 네이비 원 배지가 탭바 위로 돌출
 private struct CenterBadge: View {
     @EnvironmentObject var appState: AppState
-    private let badgeSize: CGFloat = 58
+    // 시안 측정: 네이비 원 48pt, 베이지 링 포함 58pt, 토끼 ~70%
+    private let badgeSize: CGFloat = 48
+    private let ringWidth: CGFloat = 5
 
     var body: some View {
         Button {
@@ -68,19 +70,19 @@ private struct CenterBadge: View {
             ZStack {
                 Circle()
                     .fill(DT.card)
-                    .frame(width: badgeSize + 8, height: badgeSize + 8)
+                    .frame(width: badgeSize + ringWidth * 2, height: badgeSize + ringWidth * 2)
                     .overlay(Circle().stroke(DT.strokeBrown.opacity(0.5), lineWidth: 1.5))
                 Circle()
                     .fill(DT.night)
                     .frame(width: badgeSize, height: badgeSize)
-                    .shadow(color: .black.opacity(0.18), radius: 5, y: 2)
+                    .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
                 Image("dal-tokkie-icon")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: badgeSize * 0.66)
+                    .frame(width: badgeSize * 0.7)
             }
         }
-        // 탭바(~49pt) 상단선에 배지가 걸쳐 절반 돌출
-        .offset(y: -22)
+        // 탭바 상단선에 배지가 걸쳐 위쪽 절반 돌출
+        .offset(y: -20)
     }
 }

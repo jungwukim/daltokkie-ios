@@ -57,14 +57,15 @@ struct ConditionCard: View {
     let item: ConditionItem
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Text(item.title)
-                .font(DT.sans(11, .semibold))
+                .font(DT.sans(12, .semibold))
                 .foregroundStyle(DT.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            LuckyIconView(assetName: item.asset, fallbackSymbol: "sparkles", size: 46)
-            StarRatingView(value: HomeConditions.stars(item.score), size: 10)
+            LuckyIconView(assetName: item.asset, fallbackSymbol: "sparkles", size: 50)
+                .padding(.vertical, 2)
+            StarRatingView(value: HomeConditions.stars(item.score), size: 11)
             // 게이지 바 — GeometryReader를 고정 높이 컨테이너 안에 (높이 안정)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -74,14 +75,14 @@ struct ConditionCard: View {
                         .frame(width: geo.size.width * CGFloat(max(5, min(100, item.score))) / 100)
                 }
             }
-            .frame(height: 4)
-            .padding(.horizontal, 4)
+            .frame(height: 5)
+            .padding(.horizontal, 6)
         }
-        .padding(.vertical, 11)
+        .padding(.vertical, 16)
         .padding(.horizontal, 3)
         .frame(maxWidth: .infinity)
         .background(DT.card)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(DT.line, lineWidth: 1))
     }
 }

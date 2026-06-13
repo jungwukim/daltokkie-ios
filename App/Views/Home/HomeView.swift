@@ -83,19 +83,19 @@ struct HomeView: View {
     private func heroBanner(_ bundle: DailyFortuneBundle) -> some View {
         let letter = MoonLetters.of(score: bundle.today.overallScore, dateSeed: dateSeed(bundle.today.date))
         return ZStack(alignment: .bottomTrailing) {
-            // 토끼 일러스트 — 우측, 책/찻잔이 배너 하단까지
+            // 토끼 일러스트 — 우측, 책/찻잔이 배너 하단 안착 (글귀는 200pt폭 제한으로 안 겹침)
             Image("moon-rabbit")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 245)
-                .padding(.trailing, -10)
+                .frame(width: 220)
+                .padding(.trailing, -8)
                 .padding(.bottom, -2)
 
             VStack(alignment: .leading, spacing: 0) {
                 // 날짜
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(dateMD(bundle.today.date))
-                        .font(DT.sans(34, .bold))
+                        .font(DT.sans(30, .bold))
                         .foregroundStyle(DT.ink)
                     Text(weekday(bundle.today.date))
                         .font(DT.sans(14, .semibold))
@@ -112,11 +112,11 @@ struct HomeView: View {
                 .padding(.top, 3)
 
                 Text(letter.title)
-                    .font(DT.serif(24, .bold))
+                    .font(DT.serif(20, .bold))
                     .foregroundStyle(DT.ink)
-                    .lineSpacing(5)
+                    .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 22)
+                    .padding(.top, 16)
 
                 Text(letter.body)
                     .font(DT.sans(13))
@@ -135,7 +135,7 @@ struct HomeView: View {
                     .padding(.top, 14)
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text("\(bundle.today.overallScore)")
-                        .font(DT.sans(40, .bold))
+                        .font(DT.sans(32, .bold))
                         .foregroundStyle(DT.ink)
                     Text("점")
                         .font(DT.sans(15))
@@ -170,7 +170,8 @@ struct HomeView: View {
                 }
                 .padding(.top, 16)
             }
-            .padding(20)
+            .padding(18)
+            .frame(width: 200, alignment: .topLeading)   // 텍스트 영역 좌측 고정 (토끼와 분리)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity)
@@ -207,7 +208,7 @@ struct HomeView: View {
 
     private func luckyItemsSection(_ bundle: DailyFortuneBundle) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0x8FB996))
                 Text("오늘의 행운 아이템")
                     .font(DT.serif(17, .bold))
@@ -229,7 +230,7 @@ struct HomeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 luckyCard("컬러", bundle.luckyItems.color,
                           LuckyAssets.colorAsset(bundle.luckyItems.color), "paintpalette.fill")
                 luckyCard("음료", bundle.luckyItems.drink,
@@ -245,22 +246,23 @@ struct HomeView: View {
     }
 
     private func luckyCard(_ label: String, _ value: String, _ asset: String?, _ fallback: String) -> some View {
-        VStack(spacing: 10) {
+        // 시안 측정: 카드 폭 67pt · 높이 74pt · 일러스트 큼
+        VStack(spacing: 11) {
             Text(label)
-                .font(DT.sans(12, .semibold))
+                .font(DT.sans(12.5, .semibold))
                 .foregroundStyle(DT.ink)
             LuckyIconView(assetName: asset, fallbackSymbol: fallback, size: 50)
             Text(value)
                 .font(DT.sans(10, .medium))
                 .foregroundStyle(DT.inkSoft)
                 .lineLimit(1)
-                .minimumScaleFactor(0.55)
+                .minimumScaleFactor(0.5)
                 .padding(.horizontal, 1)
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { i in
                     Circle()
                         .fill(i == 0 ? DT.accent : DT.line)
-                        .frame(width: 3.5, height: 3.5)
+                        .frame(width: 4, height: 4)
                 }
             }
         }
@@ -268,15 +270,15 @@ struct HomeView: View {
         .padding(.horizontal, 2)
         .frame(maxWidth: .infinity)
         .background(DT.card)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(DT.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(DT.line, lineWidth: 1))
     }
 
     // MARK: - 운세 컨디션 (5개 카드)
 
     private func conditionSection(_ bundle: DailyFortuneBundle) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0xB39DC9))
                 Text("오늘의 운세 컨디션")
                     .font(DT.serif(17, .bold))
@@ -284,7 +286,7 @@ struct HomeView: View {
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
             }
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 ForEach(HomeConditions.from(cards: bundle.today.cards), id: \.title) { item in
                     ConditionCard(item: item)
                 }

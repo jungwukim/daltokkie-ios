@@ -1,4 +1,4 @@
-// 메인 탭 셸 — iOS 표준 TabView. 중앙 운세 탭도 일반 탭 아이템(토끼 아이콘).
+// 메인 탭 셸 — 표준 TabView + 중앙 달토끼 돌출 배지(라벨 없음, 크게)
 
 import SwiftUI
 
@@ -34,8 +34,9 @@ struct MainTabView: View {
                 .tabItem { Label("부적함", systemImage: "archivebox.fill") }
                 .tag(AppState.Tab.talisman)
 
+            // 중앙: 운세 — 탭 아이템은 빈 자리, 실제 표시는 아래 돌출 배지
             FortuneMenuView()
-                .tabItem { Label("운세", image: "tab-rabbit") }
+                .tabItem { Label(" ", image: "tab-empty") }
                 .tag(AppState.Tab.fortune)
 
             TarotView()
@@ -47,5 +48,39 @@ struct MainTabView: View {
                 .tag(AppState.Tab.my)
         }
         .tint(DT.accent)
+        // 중앙 달토끼 돌출 배지 (라벨 없음, 다른 탭보다 큼) — 탭바 위 중앙에 겹쳐 표시
+        .overlay(alignment: .bottom) {
+            CenterBadge()
+                .environmentObject(appState)
+        }
+    }
+}
+
+/// 중앙 달토끼 돌출 배지 — 시안: 라벨 없이 네이비 원 배지가 탭바 위로 돌출
+private struct CenterBadge: View {
+    @EnvironmentObject var appState: AppState
+    private let badgeSize: CGFloat = 58
+
+    var body: some View {
+        Button {
+            appState.selectedTab = .fortune
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(DT.card)
+                    .frame(width: badgeSize + 8, height: badgeSize + 8)
+                    .overlay(Circle().stroke(DT.strokeBrown.opacity(0.5), lineWidth: 1.5))
+                Circle()
+                    .fill(DT.night)
+                    .frame(width: badgeSize, height: badgeSize)
+                    .shadow(color: .black.opacity(0.18), radius: 5, y: 2)
+                Image("dal-tokkie-icon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: badgeSize * 0.66)
+            }
+        }
+        // 탭바(~49pt) 상단선에 배지가 걸쳐 절반 돌출
+        .offset(y: -22)
     }
 }

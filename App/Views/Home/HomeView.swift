@@ -9,6 +9,7 @@ struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @State private var showYongsinInfo = false
     @State private var showLuckyDetail = false
+    @State private var showCtaBanner = true   // 세션 한정 — X로 닫으면 앱 재실행 전까지 숨김
 
     var body: some View {
         let bundle = appState.ensureDailyBundle()
@@ -22,11 +23,11 @@ struct HomeView: View {
                         heroBanner(bundle)
                         luckyItemsSection(bundle)
                         conditionSection(bundle)
-                        ctaBanner(bundle)
                     }
                     .padding(.horizontal, DT.pagePadding)
                     .padding(.top, 6)
-                    .padding(.bottom, 18)
+                    // 떠 있는 CTA 배너에 마지막 카드가 가리지 않도록 하단 여백 확보
+                    .padding(.bottom, showCtaBanner ? 104 : 18)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -39,6 +40,12 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // 탭바 위에 떠 있는 CTA 배너 레이어 (홈 탭 한정)
+        .overlay(alignment: .bottom) {
+            if showCtaBanner, let bundle {
+                floatingCtaBanner(bundle)
+            }
+        }
         .sheet(isPresented: $showLuckyDetail) {
             if let bundle { LuckyIndexDetailView(bundle: bundle) }
         }
@@ -362,6 +369,31 @@ struct HomeView: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+    }
+
+    // MARK: - 떠 있는 CTA 배너 (탭바 위 레이어 + X 닫기)
+
+    private func floatingCtaBanner(_ bundle: DailyFortuneBundle) -> some View {
+        ctaBanner(bundle)
+            // ctaBanner 내부 별 배경 GeometryReader가 전체 높이로 늘어나는 것 방지 → 원래 콘텐츠 높이 유지
+            .fixedSize(horizontal: false, vertical: true)
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) { showCtaBanner = false }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(7)
+                        .background(.white.opacity(0.18), in: Circle())
+                }
+                .padding(6)
+                .accessibilityLabel("배너 닫기")
+            }
+            .shadow(color: .black.opacity(0.22), radius: 12, y: 4)
+            .padding(.horizontal, DT.pagePadding)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     // MARK: - 유틸

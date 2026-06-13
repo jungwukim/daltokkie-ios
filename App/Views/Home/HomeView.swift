@@ -229,7 +229,7 @@ struct HomeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 luckyCard("컬러", bundle.luckyItems.color,
                           LuckyAssets.colorAsset(bundle.luckyItems.color), "paintpalette.fill")
                 luckyCard("음료", bundle.luckyItems.drink,
@@ -284,7 +284,7 @@ struct HomeView: View {
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(HomeConditions.from(cards: bundle.today.cards), id: \.title) { item in
                     ConditionCard(item: item)
                 }

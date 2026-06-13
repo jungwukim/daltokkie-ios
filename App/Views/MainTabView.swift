@@ -50,28 +50,20 @@ struct BottomTabBar: View {
     private let badgeSize: CGFloat = 64
 
     var body: some View {
-        // 탭바 본체(고정 높이) 위에 ZStack으로 배지를 얹음 — 배지가 위로 절반 돌출
-        ZStack(alignment: .top) {
-            // 탭바 본체
-            HStack(spacing: 0) {
-                ForEach(leftItems, id: \.tab) { tabButton($0) }
-                Color.clear.frame(maxWidth: .infinity)   // 중앙 자리 (배지가 들어옴)
-                ForEach(rightItems, id: \.tab) { tabButton($0) }
-            }
-            .frame(height: barHeight)
-            .frame(maxWidth: .infinity)
-            .background(
-                // 배경을 safe area 아래(홈 인디케이터)까지 확장 — 탭바가 바닥에 딱 붙음
-                UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                    .fill(DT.card)
-                    .overlay(
-                        UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22)
-                            .stroke(DT.line, lineWidth: 1)
-                    )
-                    .ignoresSafeArea(edges: .bottom),
-                alignment: .top
-            )
-
+        // 탭바 본체(고정 높이). 배지는 본체 위에 overlay로 절반 돌출.
+        // safeAreaInset(MainTabView)이 이 뷰를 화면 하단에 고정하고 배경을 홈 인디케이터까지 깐다.
+        HStack(spacing: 0) {
+            ForEach(leftItems, id: \.tab) { tabButton($0) }
+            Color.clear.frame(maxWidth: .infinity)   // 중앙 자리 (배지가 들어옴)
+            ForEach(rightItems, id: \.tab) { tabButton($0) }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: barHeight)
+        .background(
+            DT.card
+                .overlay(Rectangle().fill(DT.line).frame(height: 1), alignment: .top)
+        )
+        .overlay(alignment: .top) {
             // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 절반 돌출
             Button {
                 appState.selectedTab = .fortune
@@ -91,9 +83,8 @@ struct BottomTabBar: View {
                         .frame(width: badgeSize * 0.7)
                 }
             }
-            .offset(y: -(badgeSize + 8) / 2 + 10)   // 배지 절반이 탭바 위로
+            .alignmentGuide(.top) { $0[VerticalAlignment.center] }   // 배지 중심이 탭바 상단선에
         }
-        .frame(height: barHeight)   // 탭바가 차지하는 레이아웃 높이는 본체 높이만 (배지 돌출분은 영역 밖 그림)
     }
 
     private func tabButton(_ item: Item) -> some View {

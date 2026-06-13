@@ -16,7 +16,7 @@ enum DT {
 
     // 코너/간격
     static let radius: CGFloat = 16
-    static let pagePadding: CGFloat = 16          // 시안 좌우 여백
+    static let pagePadding: CGFloat = 20          // 시안 좌우 여백
 
     // 타이포 (시스템 폰트 — Noto 번들은 후속 작업)
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {

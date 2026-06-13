@@ -17,16 +17,19 @@ struct HomeView: View {
             header
 
             if let bundle {
-                ScrollView {
-                    VStack(spacing: 26) {
-                        heroBanner(bundle)
-                        luckyItemsSection(bundle)
-                        conditionSection(bundle)
-                        ctaBanner(bundle)
+                GeometryReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 26) {
+                            heroBanner(bundle)
+                            luckyItemsSection(bundle)
+                            conditionSection(bundle)
+                            ctaBanner(bundle)
+                        }
+                        .padding(.horizontal, DT.pagePadding)
+                        .padding(.top, 6)
+                        .padding(.bottom, 18)
+                        .frame(width: proxy.size.width)   // 가로 폭 화면 고정 (가로 스크롤·밀림 방지)
                     }
-                    .padding(.horizontal, DT.pagePadding)
-                    .padding(.top, 6)
-                    .padding(.bottom, 18)
                 }
             } else {
                 Spacer()
@@ -83,14 +86,7 @@ struct HomeView: View {
     private func heroBanner(_ bundle: DailyFortuneBundle) -> some View {
         let letter = MoonLetters.of(score: bundle.today.overallScore, dateSeed: dateSeed(bundle.today.date))
         return ZStack(alignment: .bottomTrailing) {
-            // 토끼 일러스트 — 우측, 책/찻잔이 배너 하단 안착 (글귀는 200pt폭 제한으로 안 겹침)
-            Image("moon-rabbit")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 220)
-                .padding(.trailing, -8)
-                .padding(.bottom, -2)
-
+            // 좌측 텍스트가 ZStack 폭을 결정 — 토끼는 overlay로 우측에 (폭 안 늘림)
             VStack(alignment: .leading, spacing: 0) {
                 // 날짜
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -116,6 +112,7 @@ struct HomeView: View {
                     .foregroundStyle(DT.ink)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 185, alignment: .leading)   // 토끼와 안 겹치게 글귀 폭 제한
                     .padding(.top, 16)
 
                 Text(letter.body)
@@ -123,6 +120,7 @@ struct HomeView: View {
                     .foregroundStyle(DT.inkSoft)
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 185, alignment: .leading)
                     .padding(.top, 14)
 
                 Divider()
@@ -171,11 +169,19 @@ struct HomeView: View {
                 .padding(.top, 16)
             }
             .padding(18)
-            .frame(width: 200, alignment: .topLeading)   // 텍스트 영역 좌측 고정 (토끼와 분리)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity)
         .background(DT.card)
+        .overlay(alignment: .bottomTrailing) {
+            // 토끼 — overlay라 히어로 폭에 영향 안 줌 (clipShape로 경계 안에 가둠)
+            Image("moon-rabbit")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220)
+                .offset(x: 8, y: 2)
+                .allowsHitTesting(false)
+        }
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(cornerFrame)
     }

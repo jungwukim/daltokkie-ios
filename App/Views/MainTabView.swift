@@ -62,6 +62,7 @@ struct BottomTabBar: View {
         .background(
             DT.card
                 .overlay(Rectangle().fill(DT.line).frame(height: 1), alignment: .top)
+                .ignoresSafeArea(edges: .bottom)   // 배경을 홈 인디케이터까지 — 콘텐츠 비침 차단
         )
         .overlay(alignment: .top) {
             // 중앙 달토끼 배지 — 탭바 상단선에 걸쳐 위로 절반 돌출

@@ -82,7 +82,7 @@ private struct CenterBadge: View {
                     .frame(width: badgeSize * 0.7)
             }
         }
-        // 탭바 상단선에 배지가 걸쳐 위쪽 절반 돌출
-        .offset(y: -20)
+        // 배지 중심을 다른 탭 아이콘과 같은 높이에 맞춤 (돌출 없음)
+        .offset(y: 0)
     }
 }

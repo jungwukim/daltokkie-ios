@@ -77,6 +77,18 @@
 **관련 파일**: `App/Views/MainTabView.swift`
 **관련**: DEC-001 갱신
 
+### DEC-008: 이미지 에셋 ASCII 영어 의미명 + assets-src 레포 내 출처 (2026-06-14)
+
+**결정**: 이미지/아이콘 에셋명을 한글 대신 **영어 의미명(ASCII)**으로 통일하고, 원본을 레포 내 `assets-src/<카테고리>/`에 두어 `prepare-assets.sh`가 자동 등록
+**근거**:
+- macOS는 한글 파일명을 **NFD(분해형)**로 저장 → `grep`/스크립트/툴링과 불일치 (실제로 `중앙` 검색 실패 확인)
+- 외부 `~/Desktop` 의존 제거 → 버전관리·CI·타 PC 재현성 확보
+- 영어 의미명은 개발자가 바로 식별 가능 (vs 번호/로마자)
+**명명 규칙**: `<prefix>-<englishName>` — `color-green`, `place-library`, `dir-north`, `item-01`. 엔진 한글 값 → 에셋명 변환은 `LuckyAssets.swift` colorMap/placeMap이 담당
+**대안 검토**: 로마자(chorok)·번호(color-01)는 가독성 낮아 반려 (사용자 선택: 영어 의미명)
+**주의**: 셸이 zsh면 배열 1-인덱스라 매핑 스크립트는 bash로 실행할 것 (오프바이원 방지)
+**관련 파일**: `assets-src/`, `App/Assets.xcassets/`, `App/LuckyAssets.swift`, `scripts/prepare-assets.sh`
+
 ---
 
 ## 결정 템플릿

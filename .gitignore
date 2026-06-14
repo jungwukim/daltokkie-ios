@@ -1,6 +1,15 @@
+# Build / Xcode
 .build/
 .DS_Store
 xcuserdata/
 *.xcuserstate
 build/
 DalTokkie.xcodeproj/
+
+# Claude Code — 로컬 전용 (공유 설정 .claude/settings.json 은 추적)
+.claude/settings.local.json
+
+# PDCA / bkit 툴링 로컬 상태
+docs/.pdca-status.json
+docs/.pdca-snapshots/
+docs/.bkit-memory.json

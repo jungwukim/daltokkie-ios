@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild *)",
+      "Bash(xcodegen *)",
+      "Bash(cd Engine && swift test)",
+      "Bash(swift test *)",
+      "Bash(swiftlint *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(find . *)",
+      "Bash(wc *)"
+    ]
+  }
+}

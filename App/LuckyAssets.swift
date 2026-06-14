@@ -5,20 +5,20 @@ import SwiftUI
 
 enum LuckyAssets {
 
-    // MARK: - 색깔 (엔진 색상값 → color-<폴더 색상명>)
-    // 폴더: 초록/연두/청록/에메랄드/카키/빨강/주황/보라/자주/코랄/노랑/베이지/
-    //       브라운/아이보리/카멜/흰색/실버/금색/회색/크림/파랑/남색/검정/네이비/인디고
+    // MARK: - 색깔 (엔진 색상값 → color-<ASCII 색상명>)
+    // 에셋: color-green/lightgreen/teal/emerald/khaki/red/orange/purple/magenta/coral/yellow/
+    //       beige/brown/ivory/camel/white/silver/gold/gray/cream/blue/deepblue/black/navy/indigo
     private static let colorMap: [String: String] = [
         // 木
-        "초록": "초록", "연두": "연두", "청록": "청록", "에메랄드": "에메랄드", "올리브": "카키",
+        "초록": "green", "연두": "lightgreen", "청록": "teal", "에메랄드": "emerald", "올리브": "khaki",
         // 火
-        "빨강": "빨강", "주황": "주황", "자주": "자주", "핑크": "코랄", "와인레드": "자주",
+        "빨강": "red", "주황": "orange", "자주": "magenta", "핑크": "coral", "와인레드": "magenta",
         // 土
-        "황토색": "브라운", "베이지": "베이지", "갈색": "브라운", "크림": "크림", "테라코타": "카멜",
+        "황토색": "brown", "베이지": "beige", "갈색": "brown", "크림": "cream", "테라코타": "camel",
         // 金
-        "흰색": "흰색", "은색": "실버", "골드": "금색", "아이보리": "아이보리", "라이트그레이": "회색",
+        "흰색": "white", "은색": "silver", "골드": "gold", "아이보리": "ivory", "라이트그레이": "gray",
         // 水
-        "검정": "검정", "남색": "남색", "다크블루": "네이비", "차콜": "회색", "인디고": "인디고",
+        "검정": "black", "남색": "deepblue", "다크블루": "navy", "차콜": "gray", "인디고": "indigo",
     ]
 
     static func colorAsset(_ value: String) -> String? {
@@ -26,25 +26,26 @@ enum LuckyAssets {
         return nil
     }
 
-    // MARK: - 장소 (엔진 장소값 → place-<폴더 장소명>)
-    // 폴더: 달빛정원/숲길/달빛다실/서고/온실/레스토랑/영화관/공연장/전망대/산/사찰/
-    //       도서관/미술관/한옥마을/백화점/갤러리/은행/호텔/라운지/옥상/바다/수족관/스파/분수대광장
+    // MARK: - 장소 (엔진 장소값 → place-<ASCII 장소명>)
+    // 에셋: place-moongarden/forestpath/teahouse/archive/greenhouse/restaurant/cinema/theater/
+    //       observatory/mountain/temple/library/artmuseum/hanok/department/gallery/bank/hotel/
+    //       lounge/rooftop/sea/aquarium/spa/fountain
     private static let placeMap: [String: String] = [
         // 木
-        "공원 산책로": "달빛정원", "나무 많은 길": "숲길", "꽃집": "온실",
-        "숲속 산책": "숲길", "나무 그늘 아래": "달빛정원",
+        "공원 산책로": "moongarden", "나무 많은 길": "forestpath", "꽃집": "greenhouse",
+        "숲속 산책": "forestpath", "나무 그늘 아래": "moongarden",
         // 火
-        "햇볕 쬐기": "옥상", "창가 자리": "달빛다실", "미술관": "미술관",
-        "테라스 좌석": "라운지", "공연장": "공연장",
+        "햇볕 쬐기": "rooftop", "창가 자리": "teahouse", "미술관": "artmuseum",
+        "테라스 좌석": "lounge", "공연장": "theater",
         // 土
-        "베이커리 카페": "레스토랑", "공원 잔디밭": "달빛정원", "전통 시장": "한옥마을",
-        "따뜻한 카페": "달빛다실", "정원 카페": "온실",
+        "베이커리 카페": "restaurant", "공원 잔디밭": "moongarden", "전통 시장": "hanok",
+        "따뜻한 카페": "teahouse", "정원 카페": "greenhouse",
         // 金
-        "깔끔한 카페": "라운지", "전망 좋은 곳": "전망대", "감성 서점": "서고",
-        "갤러리": "갤러리", "전망대": "전망대",
+        "깔끔한 카페": "lounge", "전망 좋은 곳": "observatory", "감성 서점": "archive",
+        "갤러리": "gallery", "전망대": "observatory",
         // 水
-        "물가 산책": "바다", "수영장": "스파", "분수대 근처": "분수대광장",
-        "어두운 조명 카페": "라운지", "밤 산책": "달빛정원",
+        "물가 산책": "sea", "수영장": "spa", "분수대 근처": "fountain",
+        "어두운 조명 카페": "lounge", "밤 산책": "moongarden",
     ]
 
     static func placeAsset(_ value: String) -> String? {

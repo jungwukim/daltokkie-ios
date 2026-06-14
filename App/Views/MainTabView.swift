@@ -79,10 +79,10 @@ private struct CenterBadge: View {
                 Image("dal-tokkie-icon")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: badgeSize * 0.7)
+                    .frame(width: badgeSize * 0.9)
             }
         }
-        // 배지 중심을 다른 탭 아이콘과 같은 높이에 맞춤 (돌출 없음)
-        .offset(y: 0)
+        // 배지 중심을 다른 탭 아이콘 높이 기준으로 살짝 아래로
+        .offset(y: 4)
     }
 }

@@ -42,34 +42,11 @@ add_image "moon-window" "$SRC_PUBLIC/moon-window.png"
 add_image "rabbit-master" "$SRC_PUBLIC/rabbit-master.png"
 add_image "tarot-back" "$SRC_PUBLIC/tarot/card-back.webp"
 
-echo "── 행운 일러스트 아이콘 (색깔/장소/방향/운세아이템, 360px, 한글 키 유지)"
+echo "── 달토끼/당근 일러스트 (Desktop 아이콘 폴더)"
 ICONS="$SRC_DESIGN/아이콘"
-# 색깔 25종: 01_초록 → color-초록
-for f in "$ICONS/색깔"/*.png; do
-  base=$(basename "$f" .png)
-  name="${base#*_}"                      # 01_초록 → 초록
-  add_image "color-${name}" "$f" 360
-done
-# 방향 10종: 01_북쪽 / 03-동쪽 → dir-북쪽 (구분자 혼용 처리)
-for f in "$ICONS/방향"/*.png; do
-  base=$(basename "$f" .png)
-  name="${base#*[_-]}"                   # 접두 번호+구분자 제거
-  add_image "dir-${name}" "$f" 360
-done
-# 장소 24종: 06-레스토랑 → place-레스토랑
-for f in "$ICONS/장소"/*.png; do
-  base=$(basename "$f" .png)
-  name="${base#*-}"
-  add_image "place-${name}" "$f" 360
-done
-# 운세아이템 10종: 운세아이템-01 → item-01
-for f in "$ICONS/운세아이템"/*.png; do
-  base=$(basename "$f" .png)
-  num="${base##*-}"                      # 01
-  add_image "item-${num}" "$f" 360
-done
 add_image "dal-tokkie-icon-ill" "$ICONS/달토끼 아이콘.png" 200
 add_image "carrot-ill" "$ICONS/당근.png" 200
+# 색깔/방향/장소/운세아이템 아이콘은 assets-src/ 로 이관됨 (ASCII 이름) — 아래 assets-src 블록에서 등록
 
 echo "── 캐릭터/배경 (1000px 다운스케일)"
 add_image "char-wolya" "$SRC_DESIGN/달토끼-캐릭터-월야.png" 1000
@@ -110,6 +87,15 @@ cat > "$ICON_DIR/Contents.json" <<'EOF'
   "info": { "author": "xcode", "version": 1 }
 }
 EOF
+
+echo "── 레포 내 에셋 (assets-src/, 하위폴더 포함) — 파일명 = 에셋 이름"
+ASSETS_SRC="$(cd "$(dirname "$0")/.." && pwd)/assets-src"
+if [ -d "$ASSETS_SRC" ]; then
+  while IFS= read -r -d '' f; do
+    name="$(basename "$f")"; name="${name%.*}"
+    add_image "$name" "$f"
+  done < <(find "$ASSETS_SRC" -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.webp' -o -name '*.pdf' \) -print0)
+fi
 
 COUNT=$(find "$XCASSETS" -name "*.imageset" | wc -l | tr -d ' ')
 SIZE=$(du -sh "$XCASSETS" | cut -f1)

@@ -10,6 +10,8 @@ struct HomeView: View {
     @State private var showYongsinInfo = false
     @State private var showLuckyDetail = false
     @State private var showCtaBanner = true   // 세션 한정 — X로 닫으면 앱 재실행 전까지 숨김
+    @State private var selectedDayIndex: Int? = nil   // 주간 카드 페이징 (nil=오늘)
+    private let heroHeight: CGFloat = 360
 
     var body: some View {
         let bundle = appState.ensureDailyBundle()
@@ -18,11 +20,13 @@ struct HomeView: View {
             header
 
             if let bundle {
+                let todayIndex = bundle.fortunes.firstIndex { $0.date == bundle.today.date } ?? 0
+                let sel = min(max(selectedDayIndex ?? todayIndex, 0), max(0, bundle.fortunes.count - 1))
                 ScrollView {
                     VStack(spacing: 26) {
-                        heroBanner(bundle)
-                        luckyItemsSection(bundle)
-                        conditionSection(bundle)
+                        heroPager(bundle)
+                        luckyItemsSection(bundle, sel)
+                        conditionSection(bundle, sel)
                     }
                     .padding(.horizontal, DT.pagePadding)
                     .padding(.top, 6)
@@ -54,52 +58,58 @@ struct HomeView: View {
     // MARK: - 헤더 (햄버거 + 로고 + 메일 숫자뱃지 + 캘린더)
 
     private var header: some View {
-        HStack(spacing: 0) {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 22, weight: .regular))
-                .foregroundStyle(DT.ink)
-            Spacer()
+        ZStack {
+            // 타이틀 — 좌우 아이콘 폭과 무관하게 화면 기준 정중앙 고정
             Text("DAL TOKKIE")
-                .font(DT.serif(22, .bold))
-                .tracking(2.5)
+                .font(DT.sans(24, .bold))
+                .tracking(0.5)
                 .foregroundStyle(DT.ink)
-            Spacer()
-            HStack(spacing: 16) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "envelope")
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            HStack(spacing: 0) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(DT.ink)
+                Spacer()
+                HStack(spacing: 16) {
+                    ZStack(alignment: .topTrailing) {
+                        Image("carrot-icon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("6")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 15, height: 15)
+                            .background(DT.accent)
+                            .clipShape(Circle())
+                            .offset(x: 7, y: -7)
+                    }
+                    Image(systemName: "calendar")
                         .font(.system(size: 21, weight: .light))
                         .foregroundStyle(DT.ink)
-                    Text("6")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 15, height: 15)
-                        .background(DT.accent)
-                        .clipShape(Circle())
-                        .offset(x: 7, y: -7)
                 }
-                Image(systemName: "calendar")
-                    .font(.system(size: 21, weight: .light))
-                    .foregroundStyle(DT.ink)
             }
         }
         .padding(.horizontal, DT.pagePadding)
         .padding(.vertical, 14)
-        .background(DT.bg)
+        // 상단 바 흰색 — 상태바 영역(상단 세이프에어리어)까지 함께 채움
+        .background(Color.white, ignoresSafeAreaEdges: .top)
     }
 
     // MARK: - 히어로 (오늘의 달빛 편지) — 토끼 우측 가득 + 코너 프레임
 
-    private func heroBanner(_ bundle: DailyFortuneBundle) -> some View {
-        let letter = MoonLetters.of(score: bundle.today.overallScore, dateSeed: dateSeed(bundle.today.date))
+    private func heroBanner(_ day: DailyFortuneResult, _ index: Int, _ bundle: DailyFortuneBundle) -> some View {
+        let letter = MoonLetters.of(score: day.overallScore, dateSeed: dateSeed(day.date))
         return ZStack(alignment: .bottomTrailing) {
             // 좌측 텍스트가 ZStack 폭을 결정 — 토끼는 overlay로 우측에 (폭 안 늘림)
             VStack(alignment: .leading, spacing: 0) {
                 // 날짜
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(dateMD(bundle.today.date))
+                    Text(dateMD(day.date))
                         .font(DT.sans(30, .bold))
                         .foregroundStyle(DT.ink)
-                    Text(weekday(bundle.today.date))
+                    Text(weekday(day.date))
                         .font(DT.sans(14, .semibold))
                         .foregroundStyle(DT.inkSoft)
                 }
@@ -138,17 +148,17 @@ struct HomeView: View {
                     .foregroundStyle(DT.inkSoft)
                     .padding(.top, 14)
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(bundle.today.overallScore)")
+                    Text("\(day.overallScore)")
                         .font(DT.sans(32, .bold))
                         .foregroundStyle(DT.ink)
                     Text("점")
                         .font(DT.sans(15))
                         .foregroundStyle(DT.inkSoft)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(trendText(bundle))
+                        Text(trendText(bundle, index))
                             .font(DT.sans(11, .semibold))
                             .foregroundStyle(DT.accent)
-                        if bundle.today.overallScore >= 65 {
+                        if day.overallScore >= 65 {
                             Text("이번 주 최고예요!")
                                 .font(DT.sans(11, .semibold))
                                 .foregroundStyle(DT.accent)
@@ -161,23 +171,24 @@ struct HomeView: View {
                 Button {
                     showLuckyDetail = true
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Text("자세히 보기")
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
                     }
-                    .font(DT.sans(13, .semibold))
+                    .font(DT.sans(11, .semibold))
                     .foregroundStyle(DT.accent)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(DT.accentSoft)
                     .clipShape(Capsule())
                 }
                 .padding(.top, 16)
             }
             .padding(18)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity)
+        .frame(height: heroHeight)   // 모든 요일 카드 높이 통일 → 페이저 정렬·꺾쇠 테두리 일관
         .background(DT.card)
         .overlay(alignment: .bottomTrailing) {
             // 토끼 — overlay라 히어로 폭에 영향 안 줌 (clipShape로 경계 안에 가둠)
@@ -192,34 +203,57 @@ struct HomeView: View {
         .overlay(cornerFrame)
     }
 
-    // 코너 장식 프레임 (┌ ┐ └ ┘)
+    // MARK: - 주간 페이저 (월~일 7장) + 요일 점 인디케이터
+
+    private func heroPager(_ bundle: DailyFortuneBundle) -> some View {
+        let todayIndex = bundle.fortunes.firstIndex { $0.date == bundle.today.date } ?? 0
+        let selection = Binding<Int>(
+            get: { selectedDayIndex ?? todayIndex },
+            set: { selectedDayIndex = $0 }
+        )
+        return VStack(spacing: 12) {
+            TabView(selection: selection) {
+                ForEach(Array(bundle.fortunes.enumerated()), id: \.offset) { idx, day in
+                    heroBanner(day, idx, bundle)
+                        .padding(.horizontal, 7)   // 캐러셀 시 카드 사이 간격
+                        .tag(idx)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: heroHeight)
+            .padding(.horizontal, -7)   // 페이지 여백만큼 TabView를 넓혀 카드 본체 폭 유지
+
+            weekDots(count: bundle.fortunes.count, todayIndex: todayIndex, selected: selection.wrappedValue)
+        }
+    }
+
+    /// 7개 점 — 오늘 요일은 다른 색, 현재 보는 페이지는 길쭉한 캡슐로 표시
+    private func weekDots(count: Int, todayIndex: Int, selected: Int) -> some View {
+        HStack(spacing: 7) {
+            ForEach(0..<count, id: \.self) { i in
+                let isToday = (i == todayIndex)
+                let isSelected = (i == selected)
+                Capsule()
+                    .fill(isSelected
+                          ? (isToday ? DT.accent : DT.inkSoft)
+                          : (isToday ? DT.accent : DT.line))
+                    .frame(width: isSelected ? 16 : 6, height: 6)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
+            }
+        }
+    }
+
+    // 카드 테두리 (코너 꺾쇠 장식은 제거됨)
     private var cornerFrame: some View {
         RoundedRectangle(cornerRadius: 18)
             .stroke(DT.line, lineWidth: 1)
-            .overlay(
-                GeometryReader { geo in
-                    let len: CGFloat = 18
-                    let inset: CGFloat = 9
-                    Path { p in
-                        let w = geo.size.width, h = geo.size.height
-                        for (cx, cy, dx, dy) in [
-                            (inset, inset, 1.0, 1.0), (w - inset, inset, -1.0, 1.0),
-                            (inset, h - inset, 1.0, -1.0), (w - inset, h - inset, -1.0, -1.0),
-                        ] {
-                            p.move(to: CGPoint(x: cx, y: cy + dy * len))
-                            p.addLine(to: CGPoint(x: cx, y: cy))
-                            p.addLine(to: CGPoint(x: cx + dx * len, y: cy))
-                        }
-                    }
-                    .stroke(DT.strokeBrown.opacity(0.55), lineWidth: 1.3)
-                }
-            )
     }
 
     // MARK: - 행운 아이템 (5개 개별 카드 + 큰 일러스트)
 
-    private func luckyItemsSection(_ bundle: DailyFortuneBundle) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func luckyItemsSection(_ bundle: DailyFortuneBundle, _ index: Int) -> some View {
+        let lucky = bundle.fortunesLucky.indices.contains(index) ? bundle.fortunesLucky[index] : bundle.luckyItems
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0x8FB996))
                 Text("오늘의 행운 아이템")
@@ -243,15 +277,16 @@ struct HomeView: View {
             }
 
             HStack(spacing: 8) {
-                luckyCard("컬러", bundle.luckyItems.color,
-                          LuckyAssets.colorAsset(bundle.luckyItems.color), "paintpalette.fill")
-                luckyCard("음료", bundle.luckyItems.drink,
+                luckyCard("컬러", lucky.color,
+                          LuckyAssets.colorOrb(lucky.color)
+                          ?? LuckyAssets.colorAsset(lucky.color), "paintpalette.fill")
+                luckyCard("음료", lucky.drink,
                           LuckyAssets.itemAsset(category: .drink), "cup.and.saucer.fill")
-                luckyCard("장소", bundle.luckyItems.place,
-                          LuckyAssets.placeAsset(bundle.luckyItems.place), "mappin.and.ellipse")
-                luckyCard("향기", bundle.luckyItems.scent,
+                luckyCard("장소", lucky.place,
+                          LuckyAssets.placeAsset(lucky.place), "mappin.and.ellipse")
+                luckyCard("향기", lucky.scent,
                           LuckyAssets.itemAsset(category: .scent), "leaf.fill")
-                luckyCard("아이템", bundle.luckyItems.item,
+                luckyCard("아이템", lucky.item,
                           LuckyAssets.itemAsset(category: .item), "gift.fill")
             }
         }
@@ -270,13 +305,6 @@ struct HomeView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .padding(.horizontal, 1)
-            HStack(spacing: 4) {
-                ForEach(0..<3, id: \.self) { i in
-                    Circle()
-                        .fill(i == 0 ? DT.accent : DT.line)
-                        .frame(width: 4, height: 4)
-                }
-            }
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 2)
@@ -288,8 +316,9 @@ struct HomeView: View {
 
     // MARK: - 운세 컨디션 (5개 카드)
 
-    private func conditionSection(_ bundle: DailyFortuneBundle) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func conditionSection(_ bundle: DailyFortuneBundle, _ index: Int) -> some View {
+        let day = bundle.fortunes.indices.contains(index) ? bundle.fortunes[index] : bundle.today
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0xB39DC9))
                 Text("오늘의 운세 컨디션")
@@ -299,7 +328,7 @@ struct HomeView: View {
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
             }
             HStack(spacing: 8) {
-                ForEach(HomeConditions.from(cards: bundle.today.cards), id: \.title) { item in
+                ForEach(HomeConditions.from(cards: day.cards), id: \.title) { item in
                     ConditionCard(item: item)
                 }
             }
@@ -333,7 +362,7 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.12))
                         .padding(.trailing, 14)
                 }
-                HStack(spacing: 10) {
+                HStack(alignment: .bottom, spacing: 10) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("달토끼의 한마디")
                             .font(DT.serif(14, .bold))
@@ -345,14 +374,15 @@ struct HomeView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 4)
-                    HStack(spacing: 4) {
+                    // "자세히 보기" 버튼과 동일 사이즈/모양 (색은 어두운 배너 가독성 위해 흰 글씨+핑크 유지)
+                    HStack(spacing: 3) {
                         Text("오늘의 부적 보기")
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
                     }
-                    .font(DT.sans(12, .bold))
+                    .font(DT.sans(11, .semibold))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(DT.accent)
                     .clipShape(Capsule())
                     .fixedSize()
@@ -419,9 +449,9 @@ struct HomeView: View {
         guard p.count == 3 else { return 0 }
         return p[0] * 10000 + p[1] * 100 + p[2]
     }
-    private func trendText(_ bundle: DailyFortuneBundle) -> String {
-        guard let idx = bundle.fortunes.firstIndex(where: { $0.date == bundle.today.date }), idx > 0 else { return "" }
-        let diff = bundle.today.overallScore - bundle.fortunes[idx - 1].overallScore
+    private func trendText(_ bundle: DailyFortuneBundle, _ index: Int) -> String {
+        guard index > 0, index < bundle.fortunes.count else { return "" }
+        let diff = bundle.fortunes[index].overallScore - bundle.fortunes[index - 1].overallScore
         if diff > 0 { return "어제보다 +\(diff)" }
         if diff < 0 { return "어제보다 \(diff)" }
         return "어제와 같아요"

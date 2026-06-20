@@ -72,7 +72,7 @@ Engine/                     ← SPM 패키지 (순수 Swift, UI 의존 없음)
 
 - SwiftUI + @Observable (iOS 17+), Observation 프레임워크 사용
 - 뷰 컴포넌트: `CraftCard`, `SectionTitle` 재사용
-- 폰트: `DT.serif()`, `DT.sans()` (추후 Noto 번들 전환 예정)
+- 폰트: `DT.serif()`, `DT.sans()` — 둘 다 **Pretendard 단일**로 매핑(번들 OFL, `DTFonts.register()` 런타임 등록). DEC-010
 - Engine 레이어는 UI import 금지 — 순수 Swift 연산만
 - 라이선스: AGPL 의존성 금지 (App Store 배포 제약)
 

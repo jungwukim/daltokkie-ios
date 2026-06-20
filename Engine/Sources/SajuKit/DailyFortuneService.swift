@@ -34,6 +34,8 @@ public struct DailyFortuneBundle: Sendable {
     public let luckyHours: LuckyHours
     public let yongsin: YongsinSummary
     public let luckyItems: LuckyItems
+    /// fortunes와 같은 순서의 요일별 행운 아이템 (상단 카드 주간 페이징용)
+    public let fortunesLucky: [LuckyItems]
 }
 
 public enum DailyFortuneService {
@@ -77,6 +79,17 @@ public enum DailyFortuneService {
 
         let lucky = deriveLuckyItems(needElement: needElement, score: today.overallScore, dateStr: today.date)
 
+        // 요일별 행운 아이템 (fortunes와 동일 순서) — needElement/용신은 사람 기준 고정, score·date만 일자별
+        let elementKoStr = elementKo[needElement] ?? needElement
+        let yongsinDesc = yongsinAnalysis.yongsin.description
+        let fortunesLucky: [LuckyItems] = fortunes.map { f in
+            let l = deriveLuckyItems(needElement: needElement, score: f.overallScore, dateStr: f.date)
+            return LuckyItems(
+                color: l.color, drink: l.drink, place: l.place, scent: l.scent, item: l.item,
+                element: needElement, elementKo: elementKoStr, reason: yongsinDesc
+            )
+        }
+
         return DailyFortuneBundle(
             saju: saju,
             today: today,
@@ -94,7 +107,8 @@ public enum DailyFortuneService {
                 element: needElement,
                 elementKo: elementKo[needElement] ?? needElement,
                 reason: yongsinAnalysis.yongsin.description
-            )
+            ),
+            fortunesLucky: fortunesLucky
         )
     }
 

@@ -80,13 +80,13 @@ final class AppState: ObservableObject {
             return cached
         }
         guard let p = profile, let saju = ensureSaju() else { return nil }
-        // 웹과 동일: 오늘이 5일 구간의 가운데 오도록 -2일부터
-        let baseJDN = LunarKitJDN(today.y, today.m, today.d) - 2
-        let (by, bm, bd) = LunarKitJDNToDate(baseJDN)
+        // 오늘 중심 7일치 (오늘±3) — 오늘이 항상 7개 점의 정중앙(index 3)에 오도록
+        let todayJDN = LunarKitJDN(today.y, today.m, today.d)
+        let (by, bm, bd) = LunarKitJDNToDate(todayJDN - 3)
         let bundle = DailyFortuneService.build(
             saju: saju, birthYear: p.year,
             targetYear: by, targetMonth: bm, targetDay: bd,
-            days: 5,
+            days: 7,
             todayYear: today.y, todayMonth: today.m, todayDay: today.d
         )
         dailyBundle = bundle

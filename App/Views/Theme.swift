@@ -1,6 +1,7 @@
 // 달토끼 디자인 토큰 — 웹 /mobile 크래프트지 컨셉 (DESIGN.md 11-1)
 
 import SwiftUI
+import CoreText
 
 enum DT {
     // 색상 팔레트
@@ -18,12 +19,32 @@ enum DT {
     static let radius: CGFloat = 16
     static let pagePadding: CGFloat = 14          // 시안 측정값(카드행 13.5pt)
 
-    // 타이포 (시스템 폰트 — Noto 번들은 후속 작업)
+    // 타이포 — Pretendard 단일 통일 (번들 OFL). serif/sans 모두 Pretendard로 매핑
+    // weight별 정적 파일을 직접 참조 → faux-bold 없이 진짜 굵기 사용
+    private static func pretendard(_ weight: Font.Weight) -> String {
+        switch weight {
+        case .bold, .heavy, .black: return "Pretendard-Bold"
+        case .semibold:             return "Pretendard-SemiBold"
+        case .medium:               return "Pretendard-Medium"
+        default:                    return "Pretendard-Regular"
+        }
+    }
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .serif)
+        .custom(pretendard(weight), size: size)
     }
     static func sans(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight)
+        .custom(pretendard(weight), size: size)
+    }
+}
+
+/// 번들 커스텀 폰트 런타임 등록 (Info.plist UIAppFonts 대신 — GENERATE_INFOPLIST_FILE 유지)
+enum DTFonts {
+    static func register() {
+        let names = ["Pretendard-Regular", "Pretendard-Medium", "Pretendard-SemiBold", "Pretendard-Bold"]
+        for name in names {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "otf") else { continue }
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
     }
 }
 

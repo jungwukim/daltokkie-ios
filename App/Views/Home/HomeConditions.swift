@@ -66,17 +66,6 @@ struct ConditionCard: View {
             LuckyIconView(assetName: item.asset, fallbackSymbol: "sparkles", size: 46)
                 .padding(.vertical, 2)
             StarRatingView(value: HomeConditions.stars(item.score), size: 8.5)
-            // 게이지 바 — GeometryReader를 고정 높이 컨테이너 안에 (높이 안정)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(DT.line.opacity(0.45))
-                    Capsule()
-                        .fill(item.gaugeColor)
-                        .frame(width: geo.size.width * CGFloat(max(5, min(100, item.score))) / 100)
-                }
-            }
-            .frame(height: 5)
-            .padding(.horizontal, 4)
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 2)

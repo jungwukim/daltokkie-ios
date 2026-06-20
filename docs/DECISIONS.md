@@ -89,6 +89,39 @@
 **주의**: 셸이 zsh면 배열 1-인덱스라 매핑 스크립트는 bash로 실행할 것 (오프바이원 방지)
 **관련 파일**: `assets-src/`, `App/Assets.xcassets/`, `App/LuckyAssets.swift`, `scripts/prepare-assets.sh`
 
+### DEC-009: 홈 타이틀 Poppins 번들 + 런타임 폰트 등록 (2026-06-20)
+
+**결정**: 홈 타이틀을 `dal tokkie`(소문자) + **Poppins Bold**(지오메트릭 산세리프)로 변경. 폰트는 `App/Fonts/Poppins-Bold.ttf`로 번들하고 **런타임 등록**(`CTFontManagerRegisterFontsForURL`, `DalTokkieApp.init`)으로 로드. Info.plist `UIAppFonts`는 사용하지 않음
+**근거**:
+- 사용자 요청: 브랜드 "The Coffee"(브라질 태생, 일본 미학 영감)의 둥근 지오메트릭 산세리프 룩 재현. The Coffee는 Circular/Poppins 계열 — Poppins는 OFL 무료라 상업 배포 가능
+- 런타임 등록 선택 이유: 프로젝트가 `GENERATE_INFOPLIST_FILE: YES`(물리 Info.plist 없음). `UIAppFonts`를 쓰려면 Info.plist 수동 관리(`info:` 블록)로 전환 + 기존 4개 `INFOPLIST_KEY_*` 마이그레이션 필요해 위험. 런타임 등록은 변경 범위가 작고 자기완결적
+**대안 검토**: ① SF Rounded(무번들, 근접하나 덜 기하학적) ② 시스템 SF(중립 그로테스크, 룩 불일치) — 사용자가 "정확한 매칭" 위해 반려. ③ Info.plist UIAppFonts — 위 근거로 반려
+**라이선스**: Poppins SIL OFL 1.1 — `NOTICE.md` 고지 추가
+**관련 파일**: `App/Fonts/Poppins-Bold.ttf`, `App/Views/Theme.swift`(`DT.geo`/`DTFonts`), `App/DalTokkieApp.swift`, `App/Views/Home/HomeView.swift`, `NOTICE.md`
+**후속**: DEC-010으로 **되돌림(superseded)** — 앱 전체 Pretendard 단일 통일하며 Poppins/`DT.geo` 제거
+
+### DEC-010: 앱 전체 타이포 Pretendard 단일 통일 (2026-06-20)
+
+**결정**: 앱 전체 폰트를 **Pretendard**(OFL) 하나로 통일. `DT.serif`/`DT.sans` 둘 다 Pretendard로 매핑(weight별 정적 .otf 직접 참조), 런타임 등록(DEC-009의 `DTFonts` 방식 유지). DEC-009의 Poppins 타이틀 폰트는 제거
+**근거**:
+- 사용자 결정("Pretendard 단일"). 서비스 특성상 한글이 본문 95% — 시스템 폰트(SF/New York)는 한글이 기기·버전별 폴백(애플 SD산돌고딕/AppleMyungjo)이라 브랜드 일관성·디자인 통제 약함
+- Pretendard = 한국 앱 사실상 표준, 고가독성, 라틴+한글 통합, OFL 무료(상업 배포 가능). WORKLOG 남은작업 #2(Noto KR 번들)을 이걸로 대체
+- weight별 파일 직접 참조 → SwiftUI faux-bold(가짜 굵기) 방지
+**대안 검토**: ① 2단 구성(본명조+Pretendard) — 감성/UI 분리상 이상적이나 사용자가 단일 선택 ② SF/New York 시스템 유지 — 한글 폴백 일관성 문제로 반려 ③ Poppins 병행 — 단일 방침과 충돌해 제거
+**라이선스**: Pretendard SIL OFL 1.1 — `NOTICE.md` 갱신
+**관련 파일**: `App/Fonts/Pretendard-{Regular,Medium,SemiBold,Bold}.otf`, `App/Views/Theme.swift`, `App/Views/Home/HomeView.swift`, `NOTICE.md`
+
+### DEC-011: 홈 상단 카드 = 오늘 중심 7일 주간 페이저 (2026-06-20)
+
+**결정**: 홈 히어로 카드를 7일 가로 페이저(`TabView .page`)로. 데이터는 **오늘 중심 7일(오늘±3)**이라 오늘이 항상 index 3(점 7개의 정중앙). 점 인디케이터는 오늘=다른 색(accent), 현재 페이지=길쭉 캡슐로 이중 표시. 페이징 범위는 상단 카드 한정
+**근거**:
+- 사용자 요청: 7개 점(요일) + 카드 페이징 + 오늘 점 다른 색 + 현재 페이지 표시 + 요일별 내용. 후속 요청으로 "오늘을 점 정중앙" → 월~일 고정이 아닌 **오늘 중심 창**이어야 오늘이 항상 가운데
+- 카드 높이 고정(360): `TabView .page`는 페이지 높이가 일정해야 정렬·클리핑이 안정. 편지 글귀가 제목3줄·본문2줄로 균일해 고정값이 안전
+- 캐러셀 간격: 페이지 카드 +7 패딩 / TabView -7 패딩으로 카드 본체 폭은 유지하면서 카드 사이 14pt 간격
+**대안 검토**: ① 월~일 캘린더 주 고정 — 오늘이 가운데로 안 와 사용자 반려 ② `ScrollView(.horizontal)+.scrollTargetBehavior(.paging)` — 가능하나 점 동기화 바인딩이 `TabView selection`보다 번거로워 반려 ③ 전체 홈 페이징 — 요청은 "상단 카드"라 범위 한정
+**관련 파일**: `App/AppState.swift`(7일·오늘±3), `App/Views/Home/HomeView.swift`(`heroPager`/`weekDots`/`heroBanner` 리팩터)
+**부수효과**: `bundle.fortunes` 공유로 "자세히 보기"의 `LuckyLineChart`가 5→7포인트(주간)로 확장됨(개선으로 수용)
+
 ---
 
 ## 결정 템플릿

@@ -26,6 +26,24 @@ enum LuckyAssets {
         return nil
     }
 
+    // MARK: - 유리구슬 마블 (오행 25색 → 구슬_아이콘 마블, 위치 기준 orb-r{행}c{열})
+    // 사용자 제작 마블 그리드를 실제 색 판독으로 오행색에 배정 (일부는 그리드에 정확한 색이 없어 근사)
+    static let colorOrbMap: [String: String] = [
+        // 木
+        "초록": "orb-r1c3", "연두": "orb-r1c4", "청록": "orb-r1c2", "에메랄드": "orb-r1c5", "올리브": "orb-r1c1",
+        // 火
+        "빨강": "orb-r2c3", "주황": "orb-r2c2", "핑크": "orb-r2c1", "자주": "orb-r2c4", "와인레드": "orb-r2c5",
+        // 土
+        "갈색": "orb-r3c2", "테라코타": "orb-r3c3", "베이지": "orb-r3c1", "크림": "orb-r3c4", "황토색": "orb-r3c5",
+        // 金
+        "흰색": "orb-r4c1", "은색": "orb-r4c2", "라이트그레이": "orb-r4c3", "아이보리": "orb-r3c5", "골드": "orb-r3c1",
+        // 水
+        "검정": "orb-r4c5", "남색": "orb-r5c1", "다크블루": "orb-r5c3", "인디고": "orb-r5c5", "차콜": "orb-r4c3",
+    ]
+
+    /// 엔진 한글 색상값 → 유리구슬 마블 에셋 (없으면 nil)
+    static func colorOrb(_ value: String) -> String? { colorOrbMap[value] }
+
     // MARK: - 장소 (엔진 장소값 → place-<ASCII 장소명>)
     // 에셋: place-moongarden/forestpath/teahouse/archive/greenhouse/restaurant/cinema/theater/
     //       observatory/mountain/temple/library/artmuseum/hanok/department/gallery/bank/hotel/

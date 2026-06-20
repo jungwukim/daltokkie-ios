@@ -6,6 +6,10 @@ import SwiftUI
 struct DalTokkieApp: App {
     @StateObject private var appState = AppState()
 
+    init() {
+        DTFonts.register()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

@@ -116,6 +116,72 @@
 - **검증**: 빌드 성공, 홈 행운 아이템 일러스트 정상 렌더(폴백 아님)
 - **커밋**: `0d0c61e` (352파일) / **결정**: DEC-008
 
+#### 12. 오늘의 행운 아이템 — 컬러를 유리구슬(orb) 이미지로 교체 (2026-06-20)
+- **요청**: "오늘의 행운 아이템 컬러를 orb 이미지로 교체해줘"
+- **작업**:
+  - 5×5 유리구슬 마블 그리드(`orb-r{행}c{열}`) 25개를 `assets-src/orbs/` 원본 + `Assets.xcassets` imageset 25개로 등록
+  - `LuckyAssets.colorOrbMap`(오행 25색 → orb) + `colorOrb(_:)` 신설
+  - `HomeView` 컬러 카드: `colorOrb(...) ?? colorAsset(...)` 폴백 체인 (orb 우선, 없으면 기존 color-* 일러스트)
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·설치·실행, 홈 컬러 항목이 SF Symbol 폴백이 아닌 실제 orb 이미지(갈색→orb-r3c2)로 렌더 확인 ✅
+- **미해결(확인 필요)**: `colorOrbMap`에 그리드 색 부족으로 인한 **중복 매핑 3쌍** — `황토색`+`아이보리`→r3c5, `베이지`+`골드`→r3c1, `라이트그레이`+`차콜`→r4c3 (25색 중 22종만 시각 구분). 주석에 "근사"로 명시됨
+- **후속 메모**: `prepare-assets.sh`는 orbs를 자동 처리하지 않음 (imageset 수동 등록 상태) — DEC-008 재현성 원칙상 추후 보강 대상
+
+#### 13. 홈 UI 다듬기 + 홈 타이틀 Poppins 적용 (2026-06-20)
+- **요청**(연속): ① 행운 아이템 카드 안쪽 점(`...`) 인디케이터 제거 ② 운세 컨디션 카드 별점 아래 게이지 바 제거 ③ "자세히 보기" 버튼 축소 ④ 홈 타이틀 `DAL TOKKIE`(대문자 시스템 세리프) → `dal tokkie`(소문자 Poppins)
+- **①②③ 변경**: `HomeView.luckyCard` 점3개 HStack 삭제 / `HomeConditions.ConditionCard` 게이지 바(GeometryReader) 삭제 / "자세히 보기" 폰트 13→11·패딩 축소·chevron 11→9
+- **④ 폰트 작업** (사용자 선택: Poppins 번들 = The Coffee 룩 정확 매칭):
+  - `App/Fonts/Poppins-Bold.ttf` 번들 (Google Fonts, OFL 1.1) — PostScript명 `Poppins-Bold`
+  - `Theme.swift`: `DT.geo(_:)` 토큰 + `DTFonts.register()`(런타임 등록, `import CoreText`) 추가
+  - `DalTokkieApp.init()`에서 `DTFonts.register()` 호출 — Info.plist UIAppFonts 대신 런타임 등록 (`GENERATE_INFOPLIST_FILE: YES` 유지 위해)
+  - `HomeView` 헤더: `Text("dal tokkie").font(DT.geo(24)).tracking(0.5)`
+  - `xcodegen generate`로 .ttf를 번들 리소스에 반영
+  - `NOTICE.md`에 Poppins OFL 고지 추가
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·설치·실행. 번들에 `Poppins-Bold.ttf` 포함 확인, 타이틀이 Poppins 소문자(둥근 a·o·d)로 렌더 — 폴백 아님 ✅
+- **결정 기록**: DEC-009
+
+#### 14. 앱 전체 타이포 Pretendard 단일 통일 (2026-06-20)
+- **요청**: "이 서비스 특성상 어떤 폰트로 통일하는게 좋을까" → 분석 후 사용자 결정 **"Pretendard 단일"**
+- **분석 요지**: 운세/사주 = 감성 카피 + 한글 95%. 시스템 폰트(SF/New York)는 한글이 기기별 폴백(산돌고딕/AppleMyungjo)이라 브랜드 일관성 약함. Pretendard(OFL)는 한국 앱 표준·고가독성·라틴까지 커버
+- **변경**:
+  - `App/Fonts/Pretendard-{Regular,Medium,SemiBold,Bold}.otf` 번들 (실제 사용 weight 4종만)
+  - `Theme.swift`: `DT.serif`/`DT.sans` 모두 Pretendard로 매핑(`pretendard(weight)` 헬퍼 — weight별 정적 파일 직접 참조해 faux-bold 방지). `DTFonts.register()` Pretendard 4종 등록
+  - 호출부 99곳(serif 22·sans 77)은 토큰 시그니처 유지로 **무수정**
+  - **DEC-009(Poppins) 되돌림**: `DT.geo` 제거, 타이틀 `DT.geo(24)`→`DT.sans(24,.bold)`, `Poppins-Bold.ttf` 삭제, `NOTICE.md` Poppins→Pretendard 교체
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·설치·실행. 번들에 Pretendard 4종 포함·Poppins 제거 확인, 한글/숫자/타이틀 전부 Pretendard 렌더 ✅
+- **결정 기록**: DEC-010 (DEC-009 supersede)
+
+#### 15. 홈 헤더 타이틀 중앙 정렬 + CTA 버튼 사이즈 통일 (2026-06-20)
+- **요청**: ① `DAL TOKKIE` 타이틀을 화면 정중앙으로(좌측 치우침 해소) ② 배너 "오늘의 부적 보기" 버튼을 "자세히 보기"와 동일 사이즈/모양 + 하단 정렬
+- **원인**: 헤더가 `좌(아이콘1)–Spacer–타이틀–Spacer–우(아이콘2)` 구조라 우측 그룹이 넓어 타이틀이 왼쪽으로 밀림
+- **변경**(`HomeView.swift`):
+  - 헤더를 `ZStack`으로 — 타이틀 `.frame(maxWidth:.infinity, alignment:.center)`(화면 기준 중앙) + 아이콘 HStack(좌/우) 오버레이
+  - CTA 버튼: `DT.sans(12,.bold)`·chevron10·패딩14/9 → `DT.sans(11,.semibold)`·chevron9·spacing3·패딩12/6 (자세히 보기와 동일). 색(흰+핑크)은 어두운 배너 가독성 위해 유지. `HStack(alignment:.bottom)`로 하단 정렬
+  - 상단 바 배경: 헤더 `DT.bg`(#F8F2E8 크래프트지=누르스름) → **흰색**, `ignoresSafeAreaEdges:.top`으로 상태바 영역까지 채움 (페이지 본문 크래프트지는 유지)
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·실행, 타이틀 정중앙·CTA 버튼 축소/하단 정렬·상단 바 흰색 확인 ✅
+
+#### 16. 상단 편지 아이콘 → 당근 아이콘 교체 (2026-06-20)
+- **요청**: 헤더 우측 편지(envelope) 아이콘을 에셋 당근 아이콘으로
+- **변경**(`HomeView.swift`): `Image(systemName:"envelope")`(SF Symbol) → `Image("carrot-icon")`(컬러 에셋, resizable·scaledToFit·24x24). "6" 알림 배지 유지. 컬러 일러스트라 `foregroundStyle` 제거
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·실행, 당근 아이콘 컬러 렌더 확인 ✅
+
+#### 17. 상단 히어로 카드 코너 꺾쇠 장식 제거 (2026-06-20)
+- **요청**: 메인 상단 카드 4모서리의 꺾쇠(┌ ┐ └ ┘) 제거
+- **변경**(`HomeView.swift`): `cornerFrame`에서 코너 브래킷 `GeometryReader`/`Path` 오버레이 삭제. 둥근 테두리 stroke(`DT.line`)는 유지
+- **검증**: iPhone 16 Pro(iOS 18.0) 빌드 성공·실행, 꺾쇠 사라지고 테두리 유지 확인 ✅
+
+#### 18. 홈 상단 카드 주간 페이징(7일) + 요일 점 인디케이터 (2026-06-20)
+- **요청**: 상단 카드 아래 7개 점(요일) + 카드 좌우 스와이프 페이징 / 오늘 요일은 다른 색 점 + 현재 페이지도 점에 표시 / 내용도 해당 요일로 / (후속) 카드 좌우 간격 + 오늘을 점 정중앙에
+- **데이터**(`AppState`): 5일(오늘±2) → **오늘 중심 7일(오늘±3)**. 오늘이 항상 index 3(7개 점의 정중앙). `fortunes` 공유라 "자세히 보기" 차트도 주간 7포인트로 자연 확장
+- **UI**(`HomeView`):
+  - `heroBanner(_ bundle:)` → `heroBanner(_ day:_ index:_ bundle:)`로 리팩터 — 모든 `bundle.today`를 선택 요일 `day`로, `trendText`는 인덱스 기준(월요일격 첫날은 추세 "")
+  - 카드 높이 `heroHeight=360`으로 통일(편지 글귀가 제목3줄·본문2줄로 균일) → 페이저 정렬·클리핑 방지
+  - `heroPager`: `TabView(.page, indexDisplayMode:.never)` + 커스텀 `weekDots`. selection 바인딩 `selectedDayIndex ?? todayIndex`
+  - `weekDots`: 오늘=다른 색(`DT.accent`), 현재 페이지=길쭉한 캡슐(16x6, 비오늘은 `DT.inkSoft`). 둘 겹치면 accent 캡슐
+  - 캐러셀 간격: 각 페이지 카드 `.padding(.horizontal,7)` + TabView `.padding(.horizontal,-7)`(카드 본체 폭 유지하며 카드 사이 14pt 간격)
+- **검증**: 빌드 성공. 오늘(6/20 토) 카드+정중앙 분홍 캡슐 확인 ✅. selectedDayIndex 기본값을 임시로 0(월)으로 바꿔 검증 → 6/15 MON·점수54·편지 변경·첫 점 선택 캡슐·오늘 점 분홍 유지 확인 후 nil 원복 ✅
+- **결정 기록**: DEC-011
+- **참고(범위)**: 페이징은 "상단 카드"만 — 행운 아이템/컨디션 섹션은 오늘 기준 유지. "오늘의 달빛 편지/행운지수" 라벨은 원문 유지(타 요일에도 "오늘의" 표기)
+
 ---
 
 ## 남은 작업 (STATUS.md에서 이관)
@@ -123,7 +189,7 @@
 | 우선순위 | 작업 | 상태 |
 |---------|------|------|
 | 1 | ~~탭바 중앙 배지 높이 시뮬레이터 확인 및 미세 조정~~ | ✅ 완료 (2026-06-13, 커밋 6314dd3 — offset 0 정렬) |
-| 2 | Noto Sans/Serif KR 폰트 번들 | 미착수 |
+| 2 | ~~Noto Sans/Serif KR 폰트 번들~~ → **Pretendard 단일 통일로 대체 완료** | ✅ 완료 (2026-06-20, WORKLOG #14, DEC-010) |
 | 3 | 행운 아이콘 웹 SVG 125종 대응 (현재 SF Symbols 5종) | 미착수 |
 | 4 | 타로/궁합 AI 해석 연결 | 미착수 |
 | 5 | 사주 상세 신살/공망/합충형파해/지장간 섹션 추가 | 미착수 |

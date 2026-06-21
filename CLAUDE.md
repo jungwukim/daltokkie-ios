@@ -84,6 +84,13 @@ Engine/                     ← SPM 패키지 (순수 Swift, UI 의존 없음)
 - `STATUS.md` — 프로젝트 전체 상태
 - `NOTICE.md` — 라이선스/저작권
 
+## 핵심 변경/주의 (최근)
+
+- **일일운세(daily-fortune) 분기**: 합충형파해 가중치·경향톤·명리 기반 달빛 편지(전치 신살 포함)로 자체 진화 → `daily-fortune.json` 픽스처는 자체 알고리즘 기준 재생성됨. **saju-api 비트재현 아님** (DEC-014/015). 코어 사주·천체력·자미두수 픽스처는 정통 재현 유지 — 변경 금지
+- **AI 심층 편지**: 서버 라우트 `saju-api/app/api/daily/interpret/route.ts`(별도 레포). 앱은 `AIProxy.interpretDaily` → 달빛 편지 ✨탭. **프로덕션 동작하려면 saju-api vercel 배포 + AI_API_KEY 필요**
+- **폰트**: Pretendard 단일(번들 OFL), DT.serif/sans 모두 매핑 (DEC-010)
+- 신규 Swift 소스 추가 시 `xcodegen generate` 필수 (sources: App 자동 수집)
+
 ## App Store 주의사항
 
 - Fortune telling은 포화 카테고리 (App Store Review Guidelines 4.3)

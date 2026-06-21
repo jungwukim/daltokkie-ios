@@ -26,6 +26,36 @@ enum AIProxy {
         return stream(path: "/api/saju/interpret", payload: payload)
     }
 
+    /// 일일운세 AI 심층 편지 스트리밍 — POST /api/daily/interpret
+    static func interpretDaily(
+        day: DailyFortuneResult, weekday: String, sinsals: [String],
+        gender: String, birthYear: Int
+    ) -> AsyncThrowingStream<String, Error> {
+        let conditions: [[String: Any]] = day.cards.map {
+            ["name": $0.category, "score": $0.score, "grade": $0.grade]
+        }
+        var relations: [String] = []
+        for tr in day.transitRelations {
+            for r in tr.stemRelations { relations.append("\(tr.natalPillar)와 \(r.type)") }
+            for r in tr.branchRelations { relations.append("\(tr.natalPillar)와 \(r.type)") }
+        }
+        let payload: [String: Any] = [
+            "date": day.date,
+            "weekday": weekday,
+            "dayPillarKo": "\(day.dayStemKorean)\(day.dayBranchKorean)",
+            "tenGod": day.tenGodOfDay,
+            "twelveStage": day.twelveStageOfDay,
+            "overallScore": day.overallScore,
+            "overallGrade": day.overallGrade,
+            "conditions": conditions,
+            "relations": relations,
+            "sinsals": sinsals,
+            "gender": gender,
+            "birthYear": birthYear,
+        ]
+        return stream(path: "/api/daily/interpret", payload: payload)
+    }
+
     /// 공용 스트리밍 POST
     static func stream(path: String, payload: [String: Any]) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in

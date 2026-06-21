@@ -9,21 +9,26 @@ struct ConditionItem {
     let score: Int           // 0~100
     let asset: String        // item-0N
     let gaugeColor: Color
+    let grade: String        // 상/중상/중/중하/하 (엔진)
+    let desc: String         // 엔진 카드 설명
 }
 
 enum HomeConditions {
     /// 엔진 카드(재물운/연애운/대인운/가정운/건강운 등) → 시안 5종
     /// 매핑: 재물←재물, 연애←연애, 인간관계←대인, 감정←가정, 건강←건강
     static func from(cards: [DailyFortuneCard]) -> [ConditionItem] {
-        func score(_ label: String) -> Int {
-            cards.first { $0.category == label }?.score ?? 50
+        func card(_ label: String) -> DailyFortuneCard? { cards.first { $0.category == label } }
+        func make(_ title: String, _ label: String, _ asset: String, _ color: Color) -> ConditionItem {
+            let c = card(label)
+            return ConditionItem(title: title, score: c?.score ?? 50, asset: asset, gaugeColor: color,
+                                 grade: c?.grade ?? "", desc: c?.description ?? "")
         }
         return [
-            ConditionItem(title: "재물", score: score("재물운"), asset: "item-01", gaugeColor: Color(hex: 0x8DA9C4)),
-            ConditionItem(title: "연애", score: score("연애운"), asset: "item-02", gaugeColor: Color(hex: 0xE89BB0)),
-            ConditionItem(title: "인간관계", score: score("대인운"), asset: "item-03", gaugeColor: Color(hex: 0xE0B450)),
-            ConditionItem(title: "감정", score: score("가정운"), asset: "item-04", gaugeColor: Color(hex: 0xB39DC9)),
-            ConditionItem(title: "건강", score: score("건강운"), asset: "item-05", gaugeColor: Color(hex: 0x8FB996)),
+            make("재물", "재물운", "item-01", Color(hex: 0x8DA9C4)),
+            make("연애", "연애운", "item-02", Color(hex: 0xE89BB0)),
+            make("인간관계", "대인운", "item-03", Color(hex: 0xE0B450)),
+            make("감정", "가정운", "item-04", Color(hex: 0xB39DC9)),
+            make("건강", "건강운", "item-05", Color(hex: 0x8FB996)),
         ]
     }
 

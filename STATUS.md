@@ -26,28 +26,30 @@
 
 ### 앱 (App/, xcodegen)
 - 프로젝트: project.yml → DalTokkie.xcodeproj (iOS 17+, iPhone 전용)
-- 에셋: 92개 이미지셋 40MB (토끼/캐릭터 5종/배경/타로 78장+뒷면/아이콘) — scripts/prepare-assets.sh
-- 화면: 온보딩(생년월일 영구 저장) / 홈(달빛편지 배너·행운지수 차트·행운아이템·레이더·막대·CTA) /
+- 폰트: **Pretendard 단일 통일**(번들 OFL, DT.serif/sans 매핑, 런타임 등록 — DEC-010)
+- 에셋: 토끼/캐릭터/배경/타로 + **행운 아이템 항목별 아이콘**(음료/장소/향기/아이템 100 + 컬러 orb 25) — 일괄 정규화(바닥·크기·가로중앙 정렬, DEC-012)
+- 화면: 온보딩(생년월일 영구 저장) /
+  **홈** — 헤더(중앙 타이틀·흰 상단바·당근 아이콘) / **상단 카드 주간 페이저(오늘 중심 7일, 요일 점 인디케이터, 명리 기반 달빛 편지)** / 행운 아이템·운세 컨디션(요일 연동, 각 `>` 항목별 설명 시트) / 달빛 편지 ✨탭 → AI 심층 편지 시트 /
   운세 메뉴 + 사주 상세(십성·12운성·신강신약·용신·격국·대운 + AI 해석) + 점성술 상세 + 자미두수 상세 + 궁합 /
   타로(78장 도감 + 3장 뽑기) / 부적함(캐릭터 5종) / 마이(프로필·재설정)
 - 차트: LuckyLineChart / FortuneRadarChart / FortuneBarChart (Path/Canvas)
-- AIProxyClient: daltokkie.vercel.app 스트리밍 (실서버 스키마 검증 완료 — 평문 마크다운 스트림)
-- 검증: 시뮬레이터(iPad 10th, iOS 18.0) 설치·실행·홈 화면 스크린샷 확인 ✅
-  (iPhone 시뮬레이터 런타임 미설치 — Xcode에서 다운로드 후 iPhone으로 실행 권장)
+- AIProxyClient: daltokkie.vercel.app 스트리밍. `interpretSaju`(원국) + **`interpretDaily`(일일 심층 편지 → `/api/daily/interpret`, saju-api 신설, 배포 필요)**
+- 검증: iPhone 16 Pro(iOS 18.0) 빌드·설치·실행 ✅
 
 ## 남은 작업 (다음 단계)
-- Noto Sans/Serif KR 폰트 번들 (현재 시스템 serif/sans)
-- 행운 아이콘: 웹 SVG 125종 대응 (현재 SF Symbols 5종)
 - 타로/궁합 AI 해석 연결 (AIProxy.stream 사용, 엔드포인트만 추가)
-- 사주 상세에 신살/공망/합충형파해/지장간 섹션 추가 (엔진 함수는 모두 준비됨)
-- 채팅(마이) 탭 고도화, 앱스토어 메타데이터/심사 대응
+- **AI 심층 편지 프로덕션 배포**: saju-api vercel 배포 + `AI_API_KEY` 설정 (코드 완료, DEC-015)
+- 사주 상세 페이지에 신살/공망/합충형파해/지장간 섹션 추가 (홈 일일운세엔 전치 신살·합충 이미 반영)
+- 마이 탭 고도화, 앱스토어 메타데이터/심사 대응
 
 ## 빌드 명령
 - 엔진 테스트: `cd Engine && swift test`
-- 프로젝트 생성: `xcodegen generate` (루트, project.yml)
-- 앱 빌드: `xcodebuild -project DalTokkie.xcodeproj -scheme DalTokkie -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build`
+- 프로젝트 생성: `xcodegen generate` (루트, project.yml — 신규 소스 추가 시 필수)
+- 앱 빌드: `xcodebuild -project DalTokkie.xcodeproj -scheme DalTokkie -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build`
 
 ## 주의/결정 사항
 - 천체력은 라이선스 클린 재구현 완료 (VSOP87B + astronomia MIT + JPL Horizons — NOTICE.md 고지). AGPL 의존성 없음
+- **daily-fortune 일일운세는 자체 알고리즘으로 분기**(합충형파해 가중치·경향톤·명리 편지 — DEC-014). saju-api 비트재현 아님. 코어 사주/천체력/자미두수는 정통 재현 유지
 - natal 1905~1908 서울 DST gap 에러는 의도된 TS 버그 재현 (saju-api 칩 task_3270ee30)
+- 일일 점수·편지는 명리 요소 기반이나 해석 콘텐츠 — "경향/조언" 톤, 단정 금지 (App Store 4.3 오락 카테고리)
 - 디자인 토큰: 배경 #f8f2e8, 카드 #faf6ee, 포인트 #d4789c, 텍스트 #2a2520/#8b7e6a, 탭바 보더 #e8dcc4, 밤하늘 #2a2f50

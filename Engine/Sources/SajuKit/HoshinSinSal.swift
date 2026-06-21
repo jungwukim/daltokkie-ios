@@ -176,6 +176,20 @@ public enum HoshinSinSal {
         return count >= 2
     }
 
+    // MARK: - 전치(일진) 신살 — 그날 지지가 natal 일간/일지와 이루는 신살 (한글 표시명, 길흉 큰 순)
+
+    /// 일진 신살: 천을귀인(일간 기준)·역마·도화·화개(일지 삼합 기준)·공망(일지 旬 기준)
+    public static func transitSinSals(transitBranch: String, natalDayStem: String, natalDayBranch: String) -> [String] {
+        let pair = [natalDayBranch, transitBranch]
+        var result: [String] = []
+        if let t = cheonEulGwiInTable[natalDayStem], t.contains(transitBranch) { result.append("천을귀인") }
+        if checkYeokMaSal(pair) { result.append("역마") }
+        if checkDoHwaSal(pair) { result.append("도화") }
+        if checkHwaGaeSal(pair) { result.append("화개") }
+        if checkGongMang(dayBranch: natalDayBranch, branches: [transitBranch]) { result.append("공망") }
+        return result
+    }
+
     // MARK: - findSinSals (ts: findSinSals)
 
     /// 사주에서 신살 찾기

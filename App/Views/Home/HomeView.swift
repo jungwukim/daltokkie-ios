@@ -11,7 +11,11 @@ struct HomeView: View {
     @State private var showLuckyDetail = false
     @State private var showCtaBanner = true   // 세션 한정 — X로 닫으면 앱 재실행 전까지 숨김
     @State private var selectedDayIndex: Int? = nil   // 주간 카드 페이징 (nil=오늘)
-    private let heroHeight: CGFloat = 360
+    @State private var showLuckyItemsDetail = false
+    @State private var showConditionsDetail = false
+    @State private var showAILetter = false
+    @State private var aiDay: DailyFortuneResult?
+    private let heroHeight: CGFloat = 392
 
     var body: some View {
         let bundle = appState.ensureDailyBundle()
@@ -52,6 +56,20 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showLuckyDetail) {
             if let bundle { LuckyIndexDetailView(bundle: bundle) }
+        }
+        .sheet(isPresented: $showAILetter) {
+            if let bundle {
+                let aiDay = aiDay ?? bundle.today
+                AILetterSheet(
+                    day: aiDay,
+                    dayLabel: aiDay.date == bundle.today.date ? "오늘" : weekdayKo(aiDay.date),
+                    weekday: weekdayKo(aiDay.date),
+                    natalDayStem: bundle.saju.raw.day.stem,
+                    natalDayBranch: bundle.saju.raw.day.branch,
+                    gender: bundle.saju.gender,
+                    birthYear: appState.profile?.year ?? 0
+                )
+            }
         }
     }
 
@@ -100,7 +118,9 @@ struct HomeView: View {
     // MARK: - 히어로 (오늘의 달빛 편지) — 토끼 우측 가득 + 코너 프레임
 
     private func heroBanner(_ day: DailyFortuneResult, _ index: Int, _ bundle: DailyFortuneBundle) -> some View {
-        let letter = MoonLetters.of(score: day.overallScore, dateSeed: dateSeed(day.date))
+        let letter = MoonLetters.generate(from: day,
+                                          natalDayStem: bundle.saju.raw.day.stem,
+                                          natalDayBranch: bundle.saju.raw.day.branch)
         let dayLabel = (day.date == bundle.today.date) ? "오늘" : weekdayKo(day.date)
         return ZStack(alignment: .bottomTrailing) {
             // 좌측 텍스트가 ZStack 폭을 결정 — 토끼는 overlay로 우측에 (폭 안 늘림)
@@ -114,13 +134,18 @@ struct HomeView: View {
                         .font(DT.sans(14, .semibold))
                         .foregroundStyle(DT.inkSoft)
                 }
-                HStack(spacing: 4) {
-                    Text("\(dayLabel)의 달빛 편지")
-                        .font(DT.serif(14, .semibold))
-                        .foregroundStyle(DT.inkSoft)
-                    Image(systemName: "moon.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color(hex: 0xE0B450))
+                Button {
+                    aiDay = day
+                    showAILetter = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("\(dayLabel)의 달빛 편지")
+                            .font(DT.serif(14, .semibold))
+                            .foregroundStyle(DT.inkSoft)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11))
+                            .foregroundStyle(DT.accent)
+                    }
                 }
                 .padding(.top, 3)
 
@@ -254,6 +279,8 @@ struct HomeView: View {
 
     private func luckyItemsSection(_ bundle: DailyFortuneBundle, _ index: Int) -> some View {
         let lucky = bundle.fortunesLucky.indices.contains(index) ? bundle.fortunesLucky[index] : bundle.luckyItems
+        let dayLabel = bundle.fortunes.indices.contains(index) && bundle.fortunes[index].date == bundle.today.date
+            ? "오늘" : (bundle.fortunes.indices.contains(index) ? weekdayKo(bundle.fortunes[index].date) : "오늘")
         return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0x8FB996))
@@ -264,7 +291,9 @@ struct HomeView: View {
                     Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(DT.inkSoft)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
+                Button { showLuckyItemsDetail = true } label: {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
+                }
             }
 
             if showYongsinInfo {
@@ -290,6 +319,9 @@ struct HomeView: View {
                 luckyCard("아이템", lucky.item,
                           LuckyAssets.luckyItemAsset(lucky.item), "gift.fill")
             }
+        }
+        .sheet(isPresented: $showLuckyItemsDetail) {
+            LuckyItemsDetailView(lucky: lucky, yongsin: bundle.yongsin, dayLabel: dayLabel)
         }
     }
 
@@ -319,6 +351,7 @@ struct HomeView: View {
 
     private func conditionSection(_ bundle: DailyFortuneBundle, _ index: Int) -> some View {
         let day = bundle.fortunes.indices.contains(index) ? bundle.fortunes[index] : bundle.today
+        let dayLabel = day.date == bundle.today.date ? "오늘" : weekdayKo(day.date)
         return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: "clover.fill").font(.system(size: 14)).foregroundStyle(Color(hex: 0xB39DC9))
@@ -326,13 +359,18 @@ struct HomeView: View {
                     .font(DT.serif(17, .bold))
                     .foregroundStyle(DT.ink)
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
+                Button { showConditionsDetail = true } label: {
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.inkSoft)
+                }
             }
             HStack(spacing: 8) {
                 ForEach(HomeConditions.from(cards: day.cards), id: \.title) { item in
                     ConditionCard(item: item)
                 }
             }
+        }
+        .sheet(isPresented: $showConditionsDetail) {
+            ConditionsDetailView(items: HomeConditions.from(cards: day.cards), dayLabel: dayLabel)
         }
     }
 
@@ -518,5 +556,159 @@ struct LuckyIndexDetailView: View {
         let p = d.split(separator: "-")
         guard p.count == 3 else { return d }
         return "\(Int(p[1]) ?? 0)/\(Int(p[2]) ?? 0)"
+    }
+}
+
+// MARK: - 행운 아이템 상세 (항목별 오행 기반 설명)
+
+struct LuckyItemsDetailView: View {
+    let lucky: LuckyItems
+    let yongsin: YongsinSummary
+    let dayLabel: String
+    @Environment(\.dismiss) private var dismiss
+
+    private var rows: [(label: String, value: String, asset: String?, cat: LuckyItemReason.Category, fallback: String)] {
+        [
+            ("컬러", lucky.color, LuckyAssets.colorOrb(lucky.color) ?? LuckyAssets.colorAsset(lucky.color), .color, "paintpalette.fill"),
+            ("음료", lucky.drink, LuckyAssets.drinkAsset(lucky.drink), .drink, "cup.and.saucer.fill"),
+            ("장소", lucky.place, LuckyAssets.placeAsset(lucky.place), .place, "mappin.and.ellipse"),
+            ("향기", lucky.scent, LuckyAssets.scentAsset(lucky.scent), .scent, "leaf.fill"),
+            ("아이템", lucky.item, LuckyAssets.luckyItemAsset(lucky.item), .item, "gift.fill"),
+        ]
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 14) {
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("\(yongsin.strengthLabel) · 용신 \(yongsin.elementKo)")
+                                .font(DT.sans(13, .bold)).foregroundStyle(DT.accent)
+                            Text(yongsin.description)
+                                .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    ForEach(rows, id: \.label) { r in
+                        CraftCard {
+                            HStack(spacing: 12) {
+                                LuckyIconView(assetName: r.asset, fallbackSymbol: r.fallback, size: 46)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack(spacing: 6) {
+                                        Text(r.label).font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
+                                        Text(r.value).font(DT.sans(14, .bold)).foregroundStyle(DT.ink)
+                                    }
+                                    Text(LuckyItemReason.text(element: lucky.element, r.cat))
+                                        .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer(minLength: 0)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .padding(DT.pagePadding)
+            }
+            .background(DT.bg)
+            .navigationTitle("\(dayLabel)의 행운 아이템")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+        }
+    }
+}
+
+// MARK: - 운세 컨디션 상세 (엔진 카드 설명)
+
+struct ConditionsDetailView: View {
+    let items: [ConditionItem]
+    let dayLabel: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 14) {
+                    ForEach(items, id: \.title) { it in
+                        CraftCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 12) {
+                                    LuckyIconView(assetName: it.asset, fallbackSymbol: "sparkles", size: 42)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(spacing: 6) {
+                                            Text(it.title).font(DT.sans(14, .bold)).foregroundStyle(DT.ink)
+                                            if !it.grade.isEmpty {
+                                                Text(it.grade).font(DT.sans(10, .semibold)).foregroundStyle(DT.accent)
+                                            }
+                                        }
+                                        StarRatingView(value: HomeConditions.stars(it.score), size: 9)
+                                    }
+                                    Spacer(minLength: 0)
+                                    Text("\(it.score)").font(DT.sans(15, .bold)).foregroundStyle(DT.inkSoft)
+                                }
+                                if !it.desc.isEmpty {
+                                    Text(it.desc).font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(DT.pagePadding)
+            }
+            .background(DT.bg)
+            .navigationTitle("\(dayLabel)의 운세 컨디션")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+        }
+    }
+}
+
+// MARK: - AI 심층 편지 시트 (탭 시 온디맨드 스트리밍 — 매 스와이프 호출 아님)
+
+struct AILetterSheet: View {
+    let day: DailyFortuneResult
+    let dayLabel: String
+    let weekday: String
+    let natalDayStem: String
+    let natalDayBranch: String
+    let gender: String
+    let birthYear: Int
+    @Environment(\.dismiss) private var dismiss
+
+    private var sinsals: [String] {
+        HoshinSinSal.transitSinSals(transitBranch: day.dayBranchKorean,
+                                    natalDayStem: natalDayStem, natalDayBranch: natalDayBranch)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("\(day.dayStemKorean)\(day.dayBranchKorean)일 · \(day.tenGodOfDay) · \(day.twelveStageOfDay)")
+                                .font(DT.sans(13, .bold)).foregroundStyle(DT.ink)
+                            if !sinsals.isEmpty {
+                                Text("신살: \(sinsals.joined(separator: ", "))")
+                                    .font(DT.sans(12)).foregroundStyle(DT.accent)
+                            }
+                            Text("행운지수 \(day.overallScore)점 (\(day.overallGrade))")
+                                .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    AIInterpretationView(title: "\(dayLabel)의 AI 심층 편지") {
+                        AIProxy.interpretDaily(day: day, weekday: weekday, sinsals: sinsals,
+                                               gender: gender, birthYear: birthYear)
+                    }
+                }
+                .padding(DT.pagePadding)
+            }
+            .background(DT.bg)
+            .navigationTitle("AI 심층 편지")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+        }
     }
 }

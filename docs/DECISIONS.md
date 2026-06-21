@@ -134,6 +134,40 @@
 **관련 파일**: `App/Assets.xcassets/{drink,place,scent,litem}-NN.imageset`, `assets-src/{drinks,places,scents,luckyitems}`, `App/LuckyAssets.swift`, `App/Views/Home/HomeView.swift`
 **관련**: DEC-008(ASCII 명명·assets-src), 구버전 `place-<이름>` 24개 삭제
 
+### DEC-013: 행운 아이템 항목 설명 = 오행 기반 카테고리 템플릿 (2026-06-21)
+
+**결정**: 행운 아이템 `>` 상세의 항목별 설명을 **용신 오행 × 카테고리 25개 템플릿**(자체 작성)으로 제공. 운세 컨디션 `>` 상세는 **엔진 `DailyFortuneCard.description`** 사용
+**근거**:
+- 사용자 요청(항목별 설명). 운세 컨디션은 엔진이 카드별 설명 보유 → 근거 있는 텍스트 그대로 사용
+- 행운 아이템은 엔진에 항목별 설명이 없음(reason은 용신 설명 1개 공통). 항목별 125문구는 과도, 용신 1개는 항목별 아님 → 절충으로 오행(용신)×카테고리 5×5=25 템플릿. 오행 이론(목생기/화활기/토안정/금명료/수지혜) 근거. 엔진 텍스트가 아닌 **자체 작성 콘텐츠**임을 파일 주석에 명시
+**대안 검토**: ① 용신 설명 1개 공통 — 항목별 아님 ② 항목별 125문구 — 작업량 과도(추후 AI 생성 여지) ③ 엔진 확장 — 범위 큼. 25 템플릿이 균형
+**관련 파일**: `App/Views/Home/LuckyItemReason.swift`, `App/Views/Home/HomeView.swift`(LuckyItemsDetailView/ConditionsDetailView), `App/Views/Home/HomeConditions.swift`(grade/desc)
+**관련**: 페이저 선택 요일 기준으로 표시(DEC-011)
+
+### DEC-014: 일일운세 명리 신빙성 강화 + daily-fortune 픽스처 자체화 (2026-06-21)
+
+**결정**: ① 일일 점수에 전치(일진) **합충형파해 가중치**(relationMod)를 명시 반영 ② 컨디션 설명·달빛 편지를 **경향/조언 톤**으로 ③ 달빛 편지를 점수대 고정풀 → **그날 일주·십성·12운성·합충형파해 기반** 생성으로 전환(현대어). 이에 따라 **daily-fortune 골든 픽스처를 새 알고리즘 기준으로 재생성**(saju-api 재현 → 자체 알고리즘)
+**근거**:
+- 사용자 요청(명리 신빙성↑, 경향/조언 톤). 십성·12운성은 이미 점수에 반영돼 있었고 합충형파해(transitRelations)만 계산되고 미반영이라 이를 가중치로 연결
+- 픽스처: 점수/설명/요약이 daily-fortune.json에 잠겨 있어 알고리즘 개선 시 충돌. daily-fortune은 게임화 레이어라 saju-api 재현보다 자체 개선이 사용자 가치에 부합 → 픽스처 재생성. **코어(saju-core·saju-analysis·natal·lunar·ziwei) 픽스처는 불변**으로 정통 재현 가치 유지
+- 신살: 현재 `findSinSals`는 natal 기준 → 전치 신살은 후속(사용자 합의). 1차는 per-day 가용 요소(일주·십성·합충)로
+**가중치 설계**: 합 +6, 충 -6~-8, 형 -7, 파 -4, 해 -5 / 일주 관계 1.5배 / ±18 클램프 (전반 점수 보정)
+**대안 검토**: 앱 레이어 보정(이중구조)·별도표시만 — 사용자가 "엔진 개선+픽스처 갱신" 선택
+**관련 파일**: `Engine/Sources/SajuKit/DailyFortune.swift`, `Engine/Tests/SajuKitTests/Resources/daily-fortune.json`, `App/Views/Home/MoonLetter.swift`, `App/Views/Home/HomeView.swift`
+**주의**: daily-fortune은 더 이상 saju-api와 비트 동일하지 않음(의도된 분기). 표현은 "경향/조언"으로 단정 금지
+**후속 완료(전치 신살)**: 그날 일진 신살(천을귀인·역마·도화·화개·공망)을 `HoshinSinSal.transitSinSals`로 온디바이스 판정해 달빛 편지에 반영. 신살 있으면 제목 헤드라인으로 승격. AI 편지는 비용·지연·심사(4.3) 고려해 홈 카드 대신 별도 심층해석 후보로 보류. 점수에는 미반영(질적 코멘트만, 픽스처 불변)
+
+### DEC-015: AI 심층 편지 — 온디맨드 별도 시트 + 서버 일일 해석 엔드포인트 (2026-06-22)
+
+**결정**: 달빛 편지의 AI 해석은 홈 카드 자동 호출이 아니라 **탭 시 온디맨드 시트**(`AILetterSheet`)로. 서버에 `/api/daily/interpret`(saju-api)를 신설해 그날 명리 데이터를 받아 LLM 편지를 스트리밍. 홈 카드 자체는 기존 온디바이스 명리 편지 유지(즉시·무비용)
+**근거**:
+- AI를 매 카드/매 스와이프 호출하면 비용·지연·심사(4.3) 부담 → 글랜서블 카드엔 부적합. 사용자가 "받기" 누를 때만 1회 스트리밍이 적절
+- 서버 엔드포인트 부재(404) 확인 → saju-api에 기존 `saju/interpret`·`tarot/interpret`와 동일 패턴(streamText/toTextStreamResponse)으로 신설. 클라이언트는 검증된 `AIProxy.stream`+`AIInterpretationView` 재사용
+- 프롬프트는 온디바이스 엔진이 계산한 사실(일주·십성·12운성·점수·합충·신살)만 전달 → 환각 없이 근거 기반 해석. 톤은 경향/조언·단정 금지(명시)
+**대안 검토**: ① 홈 카드 직접 AI — 비용/지연으로 반려 ② 기존 saju/interpret 재사용 — 원국 해석이라 일일 부적합 ③ 온디바이스만 — 사용자가 "더 끌어올려" 요청
+**배포 의존성**: saju-api를 vercel 배포 + `AI_API_KEY`(+선택 `AI_MODEL`) 설정해야 프로덕션 동작. 미배포 시 앱은 graceful 에러
+**관련 파일**: `saju-api/app/api/daily/interpret/route.ts`, `App/AIProxyClient.swift`(interpretDaily), `App/Views/Home/HomeView.swift`(AILetterSheet, 라벨 탭)
+
 ---
 
 ## 결정 템플릿

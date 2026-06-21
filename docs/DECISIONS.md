@@ -122,6 +122,18 @@
 **관련 파일**: `App/AppState.swift`(7일·오늘±3), `App/Views/Home/HomeView.swift`(`heroPager`/`weekDots`/`heroBanner` 리팩터)
 **부수효과**: `bundle.fortunes` 공유로 "자세히 보기"의 `LuckyLineChart`가 5→7포인트(주간)로 확장됨(개선으로 수용)
 
+### DEC-012: 행운 아이템 항목별 전용 아이콘 — 카테고리+번호 ASCII명 (2026-06-21)
+
+**결정**: 음료/장소/향기/아이템 행운 항목을 대표 아이콘 1개가 아닌 **항목별 전용 아이콘**으로 표시. imageset은 `<cat>-NN`(drink/place/scent/litem, NN=`elementItems` 오행순 1~25). 엔진 한글값→에셋은 `LuckyAssets`의 카테고리별 맵이 담당
+**근거**:
+- 사용자가 항목별 아이콘을 새로 제작 → 각 행운 값에 1:1 매칭이 목적
+- 번호명 채택: 100개 항목에 정확한 영어 의미명(DEC-008 선호)을 부여하는 것은 비현실적·모호. `elementItems` 순서와 1:1이라 검증 쉬움. 맵 주석에 한글값 병기로 가독성 보완
+- `litem-` 접두사: 운세 컨디션이 쓰는 `item-01..10`과 네임스페이스 충돌 방지
+- 매칭은 Python NFC 정규화로 (macOS 한글 NFD 파일명 이슈 회피, DEC-008 교훈), 표기 불일치는 오버라이드로 명시 처리
+**대안 검토**: ① 영어 의미명(DEC-008) — 100개 수작업·모호로 반려 ② 기존 `item-NN` 재사용 — 컨디션과 충돌로 반려 ③ 한글 파일명 그대로 — NFD/툴링 문제로 반려
+**관련 파일**: `App/Assets.xcassets/{drink,place,scent,litem}-NN.imageset`, `assets-src/{drinks,places,scents,luckyitems}`, `App/LuckyAssets.swift`, `App/Views/Home/HomeView.swift`
+**관련**: DEC-008(ASCII 명명·assets-src), 구버전 `place-<이름>` 24개 삭제
+
 ---
 
 ## 결정 템플릿

@@ -101,6 +101,7 @@ struct HomeView: View {
 
     private func heroBanner(_ day: DailyFortuneResult, _ index: Int, _ bundle: DailyFortuneBundle) -> some View {
         let letter = MoonLetters.of(score: day.overallScore, dateSeed: dateSeed(day.date))
+        let dayLabel = (day.date == bundle.today.date) ? "오늘" : weekdayKo(day.date)
         return ZStack(alignment: .bottomTrailing) {
             // 좌측 텍스트가 ZStack 폭을 결정 — 토끼는 overlay로 우측에 (폭 안 늘림)
             VStack(alignment: .leading, spacing: 0) {
@@ -114,7 +115,7 @@ struct HomeView: View {
                         .foregroundStyle(DT.inkSoft)
                 }
                 HStack(spacing: 4) {
-                    Text("오늘의 달빛 편지")
+                    Text("\(dayLabel)의 달빛 편지")
                         .font(DT.serif(14, .semibold))
                         .foregroundStyle(DT.inkSoft)
                     Image(systemName: "moon.fill")
@@ -143,7 +144,7 @@ struct HomeView: View {
                     .frame(width: 130)
                     .padding(.top, 18)
 
-                Text("오늘의 행운지수")
+                Text("\(dayLabel)의 행운지수")
                     .font(DT.serif(13, .semibold))
                     .foregroundStyle(DT.inkSoft)
                     .padding(.top, 14)
@@ -281,13 +282,13 @@ struct HomeView: View {
                           LuckyAssets.colorOrb(lucky.color)
                           ?? LuckyAssets.colorAsset(lucky.color), "paintpalette.fill")
                 luckyCard("음료", lucky.drink,
-                          LuckyAssets.itemAsset(category: .drink), "cup.and.saucer.fill")
+                          LuckyAssets.drinkAsset(lucky.drink), "cup.and.saucer.fill")
                 luckyCard("장소", lucky.place,
                           LuckyAssets.placeAsset(lucky.place), "mappin.and.ellipse")
                 luckyCard("향기", lucky.scent,
-                          LuckyAssets.itemAsset(category: .scent), "leaf.fill")
+                          LuckyAssets.scentAsset(lucky.scent), "leaf.fill")
                 luckyCard("아이템", lucky.item,
-                          LuckyAssets.itemAsset(category: .item), "gift.fill")
+                          LuckyAssets.luckyItemAsset(lucky.item), "gift.fill")
             }
         }
     }
@@ -439,6 +440,13 @@ struct HomeView: View {
         let jdn = jdnOf(p[0], p[1], p[2])
         let names = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
         return names[((jdn + 1) % 7 + 7) % 7]
+    }
+    private func weekdayKo(_ d: String) -> String {
+        let p = d.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3 else { return "" }
+        let jdn = jdnOf(p[0], p[1], p[2])
+        let names = ["일", "월", "화", "수", "목", "금", "토"]
+        return names[((jdn + 1) % 7 + 7) % 7] + "요일"
     }
     private func jdnOf(_ y: Int, _ m: Int, _ d: Int) -> Int {
         let a = (14 - m) / 12, yy = y + 4800 - a, mm = m + 12 * a - 3

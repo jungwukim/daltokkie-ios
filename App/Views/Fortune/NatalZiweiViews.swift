@@ -28,6 +28,15 @@ struct NatalDetailView: View {
         ScrollView {
             if let chart = appState.ensureNatal() {
                 VStack(spacing: 16) {
+                    if chart.angles != nil, !chart.houses.isEmpty {
+                        CraftCard {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SectionTitle(text: "출생 차트")
+                                NatalWheelChart(chart: chart)
+                            }
+                        }
+                    }
+
                     if let angles = chart.angles {
                         CraftCard {
                             VStack(alignment: .leading, spacing: 10) {
@@ -131,6 +140,13 @@ struct ZiweiDetailView: View {
         ScrollView {
             if let chart = appState.ensureZiwei() {
                 VStack(spacing: 16) {
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionTitle(text: "紫微斗數 명반")
+                            ZiweiGridChart(chart: chart, daxian: appState.ziweiDaxian, palaceKo: palaceKo)
+                        }
+                    }
+
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
                             SectionTitle(text: "기본 정보")

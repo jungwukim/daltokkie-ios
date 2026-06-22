@@ -111,6 +111,9 @@ struct SajuDetailView: View {
                         }
                     }
 
+                    // 웹 상세 이관: 오행분포·지장간·합충형파해·공망·신살
+                    SajuAnalysisSections(r: r, pillars: pillars)
+
                     if !daeun.isEmpty {
                         CraftCard {
                             VStack(alignment: .leading, spacing: 10) {

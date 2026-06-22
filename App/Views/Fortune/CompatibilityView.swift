@@ -59,6 +59,23 @@ struct CompatibilityView: View {
                 }
 
                 if let me = appState.ensureSaju(), let partner {
+                    let score = compatScore(me: me, partner: partner)
+
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionTitle(text: "종합 궁합")
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text("\(score)").font(DT.sans(34, .bold)).foregroundStyle(DT.accent)
+                                Text("점").font(DT.sans(14)).foregroundStyle(DT.inkSoft)
+                                Spacer()
+                                StarRatingView(value: Double(score) / 20.0, size: 14)
+                            }
+                            Text(compatComment(score))
+                                .font(DT.sans(13)).foregroundStyle(DT.ink).lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
                     CraftCard {
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "두 사람의 사주")
@@ -67,6 +84,16 @@ struct CompatibilityView: View {
                             DetailRow(label: "일간", value: "\(me.dayMaster.hanja) ↔ \(partner.dayMaster.hanja)")
                             DetailRow(label: "띠", value: "\(animalKo(me.animal)) ↔ \(animalKo(partner.animal))")
                             DetailRow(label: "띠 관계", value: zodiacRelation(me.animal, partner.animal))
+                        }
+                    }
+
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            SectionTitle(text: "일간 관계 (십성)")
+                            let ptm = tenGod(of: partner, seenBy: me)
+                            let mtp = tenGod(of: me, seenBy: partner)
+                            DetailRow(label: "상대 → 나", value: "\(ptm) — \(tenGodMeaning(ptm))")
+                            DetailRow(label: "나 → 상대", value: "\(mtp) — \(tenGodMeaning(mtp))")
                         }
                     }
 
@@ -128,6 +155,54 @@ struct CompatibilityView: View {
             return "같은 띠 — 서로를 잘 이해하는 관계"
         }
         return "무난한 관계 — 노력에 따라 좋아질 수 있어요"
+    }
+
+    /// target 일간이 viewer 입장에서 갖는 십성
+    private func tenGod(of target: FortuneTellerResult, seenBy viewer: FortuneTellerResult) -> String {
+        EngineAnalysis.getTenGod(
+            dayMasterElement: viewer.dayMaster.element, dayMasterYinYang: viewer.dayMaster.yin_yang,
+            targetElement: target.dayMaster.element, targetYinYang: target.dayMaster.yin_yang
+        )
+    }
+    private func tenGodMeaning(_ g: String) -> String {
+        [
+            "정관": "믿고 의지하는 안정적 관계", "편관": "끌리지만 긴장도 있는 관계",
+            "정재": "아끼고 돌보는 다정한 관계", "편재": "활기차고 자유로운 관계",
+            "정인": "보살핌을 주고받는 관계", "편인": "독특하게 통하는 관계",
+            "식신": "함께 있으면 편하고 즐거운 관계", "상관": "자극과 표현이 오가는 관계",
+            "비견": "친구처럼 동등한 관계", "겁재": "경쟁심이 생길 수 있는 관계",
+        ][g] ?? "서로를 알아가는 관계"
+    }
+    private func tenGodPoints(_ g: String) -> Int {
+        switch g {
+        case "정관", "정재", "정인", "식신": return 10
+        case "편재", "편인": return 4
+        case "비견", "상관": return 0
+        case "편관", "겁재": return -8
+        default: return 0
+        }
+    }
+    /// 종합 궁합 점수 (띠 관계 + 일간 십성 양방향 + 오행 보완)
+    private func compatScore(me: FortuneTellerResult, partner: FortuneTellerResult) -> Int {
+        var s = 50
+        let rel = zodiacRelation(me.animal, partner.animal)
+        if rel.contains("삼합") { s += 20 }
+        else if rel.contains("육합") { s += 15 }
+        else if rel.contains("같은 띠") { s += 5 }
+        else if rel.contains("충") { s -= 10 }
+        s += tenGodPoints(tenGod(of: partner, seenBy: me))
+        s += tenGodPoints(tenGod(of: me, seenBy: partner))
+        if me.elements.weakest == partner.elements.dominant { s += 8 }
+        if partner.elements.weakest == me.elements.dominant { s += 8 }
+        return max(15, min(98, s))
+    }
+    private func compatComment(_ score: Int) -> String {
+        switch score {
+        case 80...: return "서로를 끌어주고 채워주는 깊은 인연이에요. 신뢰를 바탕으로 오래 함께하기 좋아요."
+        case 65..<80: return "잘 어울리는 편이에요. 작은 배려를 더하면 더 단단해지는 관계예요."
+        case 50..<65: return "무난한 관계예요. 다른 점을 인정하면 서로에게 좋은 자극이 돼요."
+        default: return "부딪힘이 있을 수 있는 관계예요. 천천히 맞춰가면 오히려 단단해질 수 있어요."
+        }
     }
 
     private func elementComplement(me: FortuneTellerResult, partner: FortuneTellerResult) -> String {

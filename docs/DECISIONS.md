@@ -168,6 +168,16 @@
 **배포 의존성**: saju-api를 vercel 배포 + `AI_API_KEY`(+선택 `AI_MODEL`) 설정해야 프로덕션 동작. 미배포 시 앱은 graceful 에러
 **관련 파일**: `saju-api/app/api/daily/interpret/route.ts`, `App/AIProxyClient.swift`(interpretDaily), `App/Views/Home/HomeView.swift`(AILetterSheet, 라벨 탭)
 
+### DEC-016: 운세 상세 도식 — 온디바이스 렌더(자미 명반·점성 원형차트) (2026-06-23)
+
+**결정**: 웹(saju-api) 수준의 상세 페이지를 iOS로 이관. 1단계로 두 도식을 온디바이스 SwiftUI로 직접 렌더 — 자미 명반은 `GeometryReader+ZStack` 4×4 그리드, 점성 차트는 `Canvas`. 단계별(도식→사주 섹션→궁합)로 진행
+**근거**:
+- 조사 결과 온디바이스 엔진(ZiweiChart 12궁/성요/사화/대한, NatalChart 행성/하우스/각/어스펙트)이 웹과 동일 데이터를 이미 계산 → **AI와 달리 서버 없이** 렌더 가능
+- 도식 먼저(사용자 선택): 사용자가 "명반·점성 도식화"를 명시. SVG(웹) → Canvas/Path(iOS) 기하 포팅
+- 규모가 커 단계 분할(각 단계 빌드·스크린샷 검증)
+**관련 파일**: `App/Views/Fortune/ZiweiGridChart.swift`, `NatalWheelChart.swift`, `NatalZiweiViews.swift`
+**남은 단계**: 사주 상세(지장간/합충형파해/공망/신살/세운/월운 + 분포 차트 — 엔진 EngineAnalysis 함수 public 노출 확인 필요), 궁합 고도화
+
 ---
 
 ## 결정 템플릿

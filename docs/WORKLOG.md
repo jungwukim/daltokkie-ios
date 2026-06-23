@@ -294,6 +294,14 @@
 - TEMP 코드 전무·진입점 정상·빌드·엔진 통과·앱 실행 확인 후 일괄 커밋
 - **알려진 후속(서비스 지장 없음)**: ① 궁합 웹수준(강점/약점/조언/AI) 미반영 ② 사주 입력정보·일주성향 별도 섹션 미추가 ③ daily-fortune AI 편지 서버 배포 필요
 
+#### 33. 타로 웹 수준 정교화 (2026-06-24)
+- **요청**: 타로도 웹 수준으로 정교하게
+- **데이터**(`TarotData.swift`, 웹 lib/tarot/cards.ts 포팅): 78장(메이저22+마이너56) name/nameKo/keywords/keywordsReversed, 스프레드(원카드/쓰리카드/켈틱10 + positions), 주제 6종, **결정적 드로우**(makeSeed/drawCards 그대로), 에셋 매핑 수정(ace/02-10/page/knight/queen/king — 기존 01..14 오류 정정)
+- **AIProxy.interpretTarot** → /api/tarot/interpret (라이브)
+- **TarotView 전면 재작성**: 스프레드 선택 → 주제 → 질문(선택) → 카드 뽑기 → **카드 플립**(뒷면→앞면, 역방향 회전+빨강 "(역)"+역키워드) → 전부 공개 시 **AI 타로 리딩**. 78장 도감(이미지·이름 정확) 유지
+- **검증**: 빌드 성공. 리딩(쓰리카드 과거/현재/미래·역방향·키워드)·설정 화면·도감 렌더 확인 ✅, 타로 AI 엔드포인트 실제 스트리밍 확인(태양 카드)
+- **참고**: 카드 데이터·드로우는 온디바이스(웹 동일), AI 리딩만 서버(기존 라우트 라이브, 배포 불필요)
+
 #### 32. 궁합 웹 수준 고도화 — 강점/약점/조언 (네이티브 포팅) (2026-06-24)
 - **요청**: 궁합도 웹 수준으로 강점/약점/조언까지
 - **포팅**(`CompatibilityView`, 온디바이스): 웹 `fortuneteller.ts` `ftCheckCompatibility`/`computeCompatibilityScore`/`generateCompatAnalysis`/`getZodiacRelation` 규칙을 Swift로 그대로 이식 — 서버 불필요

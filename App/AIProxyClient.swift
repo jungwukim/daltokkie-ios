@@ -31,6 +31,13 @@ enum AIProxy {
         ])
     }
 
+    /// 타로 AI 리딩 — POST /api/tarot/interpret
+    static func interpretTarot(cards: [[String: Any]], spread: String, topic: String, question: String?) -> AsyncThrowingStream<String, Error> {
+        var payload: [String: Any] = ["cards": cards, "spread": spread, "topic": topic]
+        if let q = question, !q.trimmingCharacters(in: .whitespaces).isEmpty { payload["question"] = q }
+        return stream(path: "/api/tarot/interpret", payload: payload)
+    }
+
     /// AI 콘텐츠 — POST /api/saju/content/{id} (48종, 엔진 자동 라우팅)
     static func content(
         id: String, tone: String,

@@ -5,9 +5,47 @@
 
 import Foundation
 import SajuKit
+import NatalKit
+import ZiweiKit
 
 enum AIProxy {
     static let baseURL = URL(string: "https://daltokkie.vercel.app")!
+
+    /// Codable → JSON 객체 (엔진 타입을 API 원본 JSON 형태로 전달)
+    static func jsonValue<T: Encodable>(_ value: T) -> Any {
+        (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(value))) ?? NSNull()
+    }
+
+    /// 점성술 AI 해석 — POST /api/natal/interpret
+    static func interpretNatal(chart: NatalChart, gender: String, birthYear: Int) -> AsyncThrowingStream<String, Error> {
+        stream(path: "/api/natal/interpret", payload: ["chart": jsonValue(chart), "gender": gender, "birthYear": birthYear])
+    }
+
+    /// 자미두수 AI 해석 — POST /api/ziwei/interpret
+    static func interpretZiwei(chart: ZiweiChart, liunian: LiuNianInfo?, daxianList: [DaxianInfo], gender: String, birthYear: Int) -> AsyncThrowingStream<String, Error> {
+        stream(path: "/api/ziwei/interpret", payload: [
+            "chart": jsonValue(chart),
+            "liunian": liunian.map { jsonValue($0) } ?? NSNull(),
+            "daxianList": daxianList.map { jsonValue($0) },
+            "gender": gender, "birthYear": birthYear,
+        ])
+    }
+
+    /// AI 콘텐츠 — POST /api/saju/content/{id} (48종, 엔진 자동 라우팅)
+    static func content(
+        id: String, tone: String,
+        gender: String, birthYear: Int, birthMonth: Int, birthDay: Int, birthHour: Int?, birthMinute: Int,
+        sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil
+    ) -> AsyncThrowingStream<String, Error> {
+        var payload: [String: Any] = [
+            "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
+            "birthMinute": birthMinute, "tone": tone,
+        ]
+        if let h = birthHour { payload["birthHour"] = h }
+        if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
+        if let n = natalChart { payload["natalChart"] = jsonValue(n) }
+        return stream(path: "/api/saju/content/\(id)", payload: payload)
+    }
 
     enum ProxyError: Error {
         case badResponse(Int)

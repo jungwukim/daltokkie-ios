@@ -160,6 +160,12 @@ struct SajuDetailView: View {
                     AIInterpretationView(title: "달토끼 AI 심층 해석") {
                         AIProxy.interpretSaju(result: r, gender: profile.gender, birthYear: profile.year)
                     }
+
+                    AIContentPanel(title: "AI 콘텐츠", sections: AIContentSections.saju) { id, tone in
+                        AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
+                                        birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
+                                        sajuResult: r)
+                    }
                 }
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.vertical, 12)

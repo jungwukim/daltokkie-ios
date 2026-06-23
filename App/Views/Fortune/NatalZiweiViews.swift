@@ -124,6 +124,17 @@ struct NatalDetailView: View {
                             }
                         }
                     }
+
+                    if let profile = appState.profile {
+                        AIInterpretationView(title: "달토끼 AI 점성 해석") {
+                            AIProxy.interpretNatal(chart: chart, gender: profile.gender, birthYear: profile.year)
+                        }
+                        AIContentPanel(title: "AI 점성술 콘텐츠", sections: AIContentSections.natal) { id, tone in
+                            AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
+                                            birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
+                                            natalChart: chart)
+                        }
+                    }
                 }
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.vertical, 12)
@@ -249,6 +260,16 @@ struct ZiweiDetailView: View {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if let profile = appState.profile {
+                        AIInterpretationView(title: "달토끼 AI 자미 해석") {
+                            AIProxy.interpretZiwei(chart: chart, liunian: appState.ziweiLiunian, daxianList: appState.ziweiDaxian ?? [], gender: profile.gender, birthYear: profile.year)
+                        }
+                        AIContentPanel(title: "AI 자미두수 콘텐츠", sections: AIContentSections.ziwei) { id, tone in
+                            AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
+                                            birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute)
                         }
                     }
                 }

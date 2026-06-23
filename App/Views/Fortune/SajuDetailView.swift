@@ -49,15 +49,41 @@ struct SajuDetailView: View {
                         }
                     }
 
+                    // 오행 분포
+                    SajuAnalysisSections(r: r, pillars: pillars, phase: .elements)
+
+                    if let gyeokguk = r.raw.gyeokGuk {
+                        CraftCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                SectionTitle(text: "격국(格局)")
+                                Text("\(gyeokguk.name) (\(gyeokguk.hanja))")
+                                    .font(DT.serif(16, .bold))
+                                    .foregroundStyle(DT.ink)
+                                Text(gyeokguk.description)
+                                    .font(DT.sans(13))
+                                    .foregroundStyle(DT.inkSoft)
+                                    .lineSpacing(4)
+                            }
+                        }
+                    }
+
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
-                            SectionTitle(text: "십성 · 12운성")
-                            tenGodRow("년주", tenGods.year.stem, tenGods.year.branch, stages.year.stage)
-                            tenGodRow("월주", tenGods.month.stem, tenGods.month.branch, stages.month.stage)
-                            tenGodRow("일주", tenGods.day.stem, tenGods.day.branch, stages.day.stage)
-                            if let hourGods = tenGods.hour, let hourStage = stages.hour {
-                                tenGodRow("시주", hourGods.stem, hourGods.branch, hourStage.stage)
-                            }
+                            SectionTitle(text: "십성(十神) 배치표")
+                            tenGodRow("년주", tenGods.year.stem, tenGods.year.branch)
+                            tenGodRow("월주", tenGods.month.stem, tenGods.month.branch)
+                            tenGodRow("일주", tenGods.day.stem, tenGods.day.branch)
+                            if let h = tenGods.hour { tenGodRow("시주", h.stem, h.branch) }
+                        }
+                    }
+
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionTitle(text: "12운성")
+                            stageRow("년주", stages.year.stage, stages.year.period)
+                            stageRow("월주", stages.month.stage, stages.month.period)
+                            stageRow("일주", stages.day.stage, stages.day.period)
+                            if let h = stages.hour { stageRow("시주", h.stage, h.period) }
                         }
                     }
 
@@ -96,23 +122,8 @@ struct SajuDetailView: View {
                         }
                     }
 
-                    if let gyeokguk = r.raw.gyeokGuk {
-                        CraftCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                SectionTitle(text: "격국(格局)")
-                                Text("\(gyeokguk.name) (\(gyeokguk.hanja))")
-                                    .font(DT.serif(16, .bold))
-                                    .foregroundStyle(DT.ink)
-                                Text(gyeokguk.description)
-                                    .font(DT.sans(13))
-                                    .foregroundStyle(DT.inkSoft)
-                                    .lineSpacing(4)
-                            }
-                        }
-                    }
-
-                    // 웹 상세 이관: 오행분포·지장간·합충형파해·공망·신살
-                    SajuAnalysisSections(r: r, pillars: pillars)
+                    // 공망·합충형파해·삼합·천간합충·지장간·신살
+                    SajuAnalysisSections(r: r, pillars: pillars, phase: .relations)
 
                     if !daeun.isEmpty {
                         CraftCard {
@@ -143,6 +154,9 @@ struct SajuDetailView: View {
                         }
                     }
 
+                    // 세운·오늘의 운세·월운·운세 달력
+                    SajuAnalysisSections(r: r, pillars: pillars, phase: .timeline)
+
                     AIInterpretationView(title: "달토끼 AI 심층 해석") {
                         AIProxy.interpretSaju(result: r, gender: profile.gender, birthYear: profile.year)
                     }
@@ -168,7 +182,7 @@ struct SajuDetailView: View {
             .joined(separator: " · ")
     }
 
-    private func tenGodRow(_ title: String, _ stemGod: String, _ branchGod: String, _ stage: String) -> some View {
+    private func tenGodRow(_ title: String, _ stemGod: String, _ branchGod: String) -> some View {
         HStack {
             Text(title)
                 .font(DT.sans(12))
@@ -177,13 +191,26 @@ struct SajuDetailView: View {
             Text("천간 \(stemGod)")
                 .font(DT.sans(12, .medium))
                 .foregroundStyle(DT.ink)
+            Spacer()
             Text("지지 \(branchGod)")
                 .font(DT.sans(12, .medium))
                 .foregroundStyle(DT.ink)
-            Spacer()
+        }
+    }
+
+    private func stageRow(_ title: String, _ stage: String, _ period: String) -> some View {
+        HStack {
+            Text(title)
+                .font(DT.sans(12))
+                .foregroundStyle(DT.inkSoft)
+                .frame(width: 44, alignment: .leading)
             Text(stage)
-                .font(DT.sans(12, .bold))
+                .font(DT.sans(13, .bold))
                 .foregroundStyle(DT.accent)
+            Spacer()
+            Text(period)
+                .font(DT.sans(11))
+                .foregroundStyle(DT.inkSoft)
         }
     }
 

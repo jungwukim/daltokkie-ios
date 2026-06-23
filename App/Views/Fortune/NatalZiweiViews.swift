@@ -80,6 +80,29 @@ struct NatalDetailView: View {
                         }
                     }
 
+                    if !chart.houses.isEmpty {
+                        CraftCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                SectionTitle(text: "하우스 (Placidus)")
+                                ForEach(chart.houses, id: \.number) { h in
+                                    HStack {
+                                        Text("\(h.number)하우스")
+                                            .font(DT.sans(12))
+                                            .foregroundStyle(DT.inkSoft)
+                                            .frame(width: 64, alignment: .leading)
+                                        Text(zodiacKo[h.sign] ?? h.sign)
+                                            .font(DT.sans(13))
+                                            .foregroundStyle(DT.accent)
+                                        Text(String(format: "%.1f°", h.degreeInSign))
+                                            .font(DT.sans(12))
+                                            .foregroundStyle(DT.inkSoft)
+                                        Spacer()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if !chart.aspects.isEmpty {
                         CraftCard {
                             VStack(alignment: .leading, spacing: 8) {

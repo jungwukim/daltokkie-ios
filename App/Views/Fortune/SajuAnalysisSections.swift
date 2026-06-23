@@ -5,8 +5,11 @@ import SwiftUI
 import SajuKit
 
 struct SajuAnalysisSections: View {
+    enum Phase { case elements, relations, timeline }
+    @EnvironmentObject var appState: AppState
     let r: FortuneTellerResult
     let pillars: SajuPillars
+    let phase: Phase
 
     private static let elementKo = ["Wood": "목", "Fire": "화", "Earth": "토", "Metal": "금", "Water": "수"]
     private func elColor(_ e: String) -> Color {
@@ -36,6 +39,23 @@ struct SajuAnalysisSections: View {
     }
 
     var body: some View {
+        switch phase {
+        case .elements:
+            elementsCard
+        case .relations:
+            relationsPhase
+        case .timeline:
+            VStack(spacing: 16) {
+                yearFortuneCard
+                todayFortuneCard
+                monthlyCard
+                monthlyCalendarCard
+            }
+        }
+    }
+
+    // 공망 → 합충형파해 → 삼합 → 천간합충 → 지장간 → 신살 (웹 모바일 순서)
+    private var relationsPhase: some View {
         let hidden = EngineAnalysis.calculateHiddenStems(pillars: pillars, dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang)
         let branchRels = EngineAnalysis.calculateBranchRelations(pillars: pillars)
         let multiRels = EngineAnalysis.calculateMultiRelations(pillars: pillars)
@@ -46,19 +66,90 @@ struct SajuAnalysisSections: View {
         let stems = [r.pillars.year.stem.hanja, r.pillars.month.stem.hanja, r.pillars.day.stem.hanja, r.pillars.hour?.stem.hanja].compactMap { $0 }
         let branchArr = [r.pillars.year.branch.hanja, r.pillars.month.branch.hanja, r.pillars.day.branch.hanja, r.pillars.hour?.branch.hanja].compactMap { $0 }
         let specialSals = EngineAnalysis.calculateSpecialSals(stems: stems, branches: branchArr, dayPillar: "\(r.pillars.day.stem.hanja)\(dayBranchHanja)")
-
-        VStack(spacing: 16) {
-            elementsCard
-            hiddenStemsCard(hidden)
-            if !branchRels.isEmpty || !stemRels.isEmpty || !multiRels.isEmpty {
-                relationsCard(branchRels, multiRels, stemRels)
-            }
+        return VStack(spacing: 16) {
             gongmangCard(gongmang)
-            if !spirits.isEmpty || !specialSals.isEmpty {
-                sinsalCard(spirits, specialSals)
+            if !branchRels.isEmpty { relListCard("합충형파해", branchRels.map { ($0.type, $0.typeName, $0.branchesKorean, $0.pillars, $0.description) }) }
+            if !multiRels.isEmpty { relListCard("삼합·반합·방합", multiRels.map { ($0.type, $0.typeName, $0.branchesKorean, $0.pillars, "\($0.description) · \($0.resultElement)") }) }
+            if !stemRels.isEmpty { relListCard("천간합·충", stemRels.map { ($0.type, $0.typeName, $0.stemsKorean, $0.pillars, $0.description) }) }
+            hiddenStemsCard(hidden)
+            if !spirits.isEmpty || !specialSals.isEmpty { sinsalCard(spirits, specialSals) }
+        }
+    }
+
+    private func relListCard(_ title: String, _ rows: [(String, String, [String], [String], String)]) -> some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: title)
+                ForEach(rows.indices, id: \.self) { i in
+                    relRow(rows[i].0, rows[i].1, rows[i].2, rows[i].3, rows[i].4)
+                }
             }
-            yearFortuneCard
-            monthlyCard
+        }
+    }
+
+    // MARK: 오늘의 운세
+    private var todayFortuneCard: some View {
+        Group {
+            if let bundle = appState.ensureDailyBundle() {
+                let t = bundle.today
+                CraftCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        SectionTitle(text: "오늘의 운세")
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text("\(t.overallScore)").font(DT.sans(28, .bold)).foregroundStyle(DT.accent)
+                            Text("점 · \(t.overallGrade)").font(DT.sans(13)).foregroundStyle(DT.inkSoft)
+                        }
+                        ForEach(HomeConditions.from(cards: t.cards), id: \.title) { c in
+                            HStack {
+                                Text(c.title).font(DT.sans(12, .medium)).foregroundStyle(DT.ink).frame(width: 60, alignment: .leading)
+                                StarRatingView(value: HomeConditions.stars(c.score), size: 9)
+                                Spacer()
+                                Text("\(c.score)").font(DT.sans(11)).foregroundStyle(DT.inkSoft)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: 운세 달력 (이번 달)
+    private var monthlyCalendarCard: some View {
+        let now = Date()
+        let year = Calendar.current.component(.year, from: now)
+        let month = Calendar.current.component(.month, from: now)
+        let today = Calendar.current.component(.day, from: now)
+        let days = DailyFortuneEngine.calculateMonthlyCalendar(year: year, month: month, dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang, dayMasterHanja: r.dayMaster.hanja, birthYear: appState.profile?.year ?? year)
+        var comp = DateComponents(); comp.year = year; comp.month = month; comp.day = 1
+        let lead = (Calendar.current.dateComponents([.weekday], from: Calendar.current.date(from: comp) ?? now).weekday ?? 1) - 1
+        func scoreColor(_ s: Int) -> Color {
+            if s >= 70 { return Color(hex: 0x5A9E6F) }
+            if s >= 50 { return Color(hex: 0xE0B450) }
+            if s >= 35 { return DT.accent }
+            return Color(hex: 0xB0A088)
+        }
+        return CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "\(year)년 \(month)월 운세 달력")
+                let cols = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+                LazyVGrid(columns: cols, spacing: 4) {
+                    ForEach(["일","월","화","수","목","금","토"], id: \.self) { w in
+                        Text(w).font(DT.sans(9)).foregroundStyle(DT.inkSoft)
+                    }
+                    ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 30) }
+                    ForEach(days, id: \.day) { d in
+                        VStack(spacing: 1) {
+                            Text("\(d.day)").font(DT.sans(10, d.day == today ? .bold : .regular))
+                                .foregroundStyle(d.day == today ? DT.accent : DT.ink)
+                            Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5)
+                        }
+                        .frame(height: 30)
+                        .frame(maxWidth: .infinity)
+                        .background(d.day == today ? DT.accentSoft.opacity(0.5) : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
         }
     }
 
@@ -179,16 +270,6 @@ struct SajuAnalysisSections: View {
     }
 
     // MARK: 합충형파해 + 삼합 + 천간합충
-    private func relationsCard(_ br: [BranchRelation], _ mr: [MultiRelation], _ sr: [StemRelation]) -> some View {
-        CraftCard {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "합충형파해 · 천간 관계")
-                ForEach(br.indices, id: \.self) { i in relRow(br[i].type, br[i].typeName, br[i].branchesKorean, br[i].pillars, br[i].description) }
-                ForEach(mr.indices, id: \.self) { i in relRow(mr[i].type, mr[i].typeName, mr[i].branchesKorean, mr[i].pillars, "\(mr[i].description) · \(mr[i].resultElement)") }
-                ForEach(sr.indices, id: \.self) { i in relRow(sr[i].type, sr[i].typeName, sr[i].stemsKorean, sr[i].pillars, sr[i].description) }
-            }
-        }
-    }
     private func relRow(_ type: String, _ name: String, _ items: [String], _ pillars: [String], _ desc: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(type).font(DT.sans(10, .bold)).foregroundStyle(.white)

@@ -25,6 +25,13 @@ xcodebuild -project DalTokkie.xcodeproj -scheme DalTokkie \
 cd Engine && swift test     # 엔진 골든 픽스처 테스트 (4,398건)
 ```
 
+## 웹 엔진 동일성
+
+사주 기본(1,001)·사주 분석(106)·점성(408)·자미(366)·음력 변환은 원본 웹(saju-api)
+골든 픽스처와 **비트 단위로 동일**하게 검증됨 (`swift test` + 웹 골든 재생성 대조).
+단 **일일운세(daily-fortune)**는 합충형파해 가중치·경향/조언 톤·명리 기반 달빛 편지로
+iOS 자체 진화시킨 의도적 분기 (DEC-014).
+
 ## 에셋 추가
 
 `assets-src/<카테고리>/` 에 **ASCII 파일명**으로 PNG(@2x)를 넣으면

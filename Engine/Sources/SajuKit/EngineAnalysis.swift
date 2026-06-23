@@ -793,6 +793,34 @@ public enum EngineAnalysis {
         ("亥", "해", "돼지", "Water", "Yin"),
     ]
 
+    // 월운: 절기월 지지 순서 (1월=寅)
+    static let MONTH_BRANCHES_HANJA = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"]
+
+    /// 한 해 12개월 월주 (오호둔갑법) — saju-engine.ts calculateMonthlyPillars 포팅
+    public static func calculateMonthlyPillars(targetYear: Int, dayMasterElement: String, dayMasterYinYang: String, dayMasterHanja: String) -> [MonthlyPillar] {
+        let yearStemIdx = ((targetYear - 4) % 10 + 10) % 10
+        let baseMonthStemIdx = (yearStemIdx % 5) * 2 + 2
+        var results: [MonthlyPillar] = []
+        for m in 1...12 {
+            let branchIdx = m - 1
+            let stemIdx = (baseMonthStemIdx + branchIdx) % 10
+            let stem = SajuTables.stems[stemIdx]
+            let branchHanja = MONTH_BRANCHES_HANJA[branchIdx]
+            let branchKorean = SajuTables.branches.first { $0.hanja == branchHanja }?.korean ?? branchHanja
+            let stemInfo = STEM_ELEMENT_MAP[stem.hanja] ?? (element: "", yinYang: "")
+            let primary = BRANCH_HANJA_TO_PRIMARY_STEM[branchHanja]
+            let tenGodStem = getTenGod(dayMasterElement: dayMasterElement, dayMasterYinYang: dayMasterYinYang, targetElement: stemInfo.element, targetYinYang: stemInfo.yinYang)
+            let tenGodBranch = primary.map { getTenGod(dayMasterElement: dayMasterElement, dayMasterYinYang: dayMasterYinYang, targetElement: $0.element, targetYinYang: $0.yin_yang) } ?? ""
+            results.append(MonthlyPillar(
+                month: m, stemHanja: stem.hanja, stemKorean: stem.korean, stemElement: stemInfo.element,
+                branchHanja: branchHanja, branchKorean: branchKorean, branchElement: primary?.element ?? "",
+                tenGodStem: tenGodStem, tenGodBranch: tenGodBranch,
+                twelveStage: getTwelveStage(dayMasterHanja: dayMasterHanja, branchHanja: branchHanja)
+            ))
+        }
+        return results
+    }
+
     public static func calculateYearFortune(targetYear: Int, dayMasterElement: String, dayMasterYinYang: String, dayMasterHanja: String) -> YearFortune {
         let stemIndex = ((targetYear - 4) % 10 + 10) % 10
         let branchIndex = ((targetYear - 4) % 12 + 12) % 12

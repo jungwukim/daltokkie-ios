@@ -364,6 +364,34 @@ public struct YongsinAnalysis: Codable, Equatable, Sendable {
     }
 }
 
+// MARK: - 월운(月運) — 한 해 12개월 월주
+
+public struct MonthlyPillar: Codable, Equatable, Sendable {
+    public let month: Int
+    public let stemHanja: String
+    public let stemKorean: String
+    public let stemElement: String
+    public let branchHanja: String
+    public let branchKorean: String
+    public let branchElement: String
+    public let tenGodStem: String
+    public let tenGodBranch: String
+    public let twelveStage: String
+
+    public init(month: Int, stemHanja: String, stemKorean: String, stemElement: String, branchHanja: String, branchKorean: String, branchElement: String, tenGodStem: String, tenGodBranch: String, twelveStage: String) {
+        self.month = month
+        self.stemHanja = stemHanja
+        self.stemKorean = stemKorean
+        self.stemElement = stemElement
+        self.branchHanja = branchHanja
+        self.branchKorean = branchKorean
+        self.branchElement = branchElement
+        self.tenGodStem = tenGodStem
+        self.tenGodBranch = tenGodBranch
+        self.twelveStage = twelveStage
+    }
+}
+
 // MARK: - 세운(歲運)
 
 public struct YearFortune: Codable, Equatable, Sendable {

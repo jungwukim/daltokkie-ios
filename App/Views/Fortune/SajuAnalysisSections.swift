@@ -58,6 +58,37 @@ struct SajuAnalysisSections: View {
                 sinsalCard(spirits, specialSals)
             }
             yearFortuneCard
+            monthlyCard
+        }
+    }
+
+    // MARK: 월운(올해 12개월)
+    private var monthlyCard: some View {
+        let year = Calendar.current.component(.year, from: Date())
+        let months = EngineAnalysis.calculateMonthlyPillars(targetYear: year, dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang, dayMasterHanja: r.dayMaster.hanja)
+        let curMonth = Calendar.current.component(.month, from: Date())
+        return CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "월운(月運) · \(year)년")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(months, id: \.month) { mp in
+                            VStack(spacing: 3) {
+                                Text("\(mp.month)월").font(DT.sans(10, .semibold))
+                                    .foregroundStyle(mp.month == curMonth ? DT.accent : DT.inkSoft)
+                                Text("\(mp.stemHanja)\(mp.branchHanja)")
+                                    .font(DT.serif(18, .bold)).foregroundStyle(elColor(mp.stemElement))
+                                Text(mp.tenGodStem).font(DT.sans(10, .medium)).foregroundStyle(DT.ink).lineLimit(1)
+                                Text(mp.twelveStage).font(DT.sans(9)).foregroundStyle(DT.inkSoft)
+                            }
+                            .frame(width: 56)
+                            .padding(.vertical, 8)
+                            .background(mp.month == curMonth ? DT.accentSoft.opacity(0.5) : DT.bg)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+            }
         }
     }
 

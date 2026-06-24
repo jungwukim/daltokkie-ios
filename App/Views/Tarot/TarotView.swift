@@ -161,7 +161,7 @@ struct TarotReadingView: View {
                 }
 
                 if flipped.count == session.cards.count {
-                    AIInterpretationView(title: "AI 타로 리딩") {
+                    AIInterpretationView(title: "타로 리딩") {
                         AIProxy.interpretTarot(
                             cards: session.cards.map { d in
                                 ["name": d.card.name, "nameKo": d.card.nameKo, "isReversed": d.isReversed,

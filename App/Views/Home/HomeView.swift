@@ -698,7 +698,7 @@ struct AILetterSheet: View {
                                 .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    AIInterpretationView(title: "\(dayLabel)의 AI 심층 편지") {
+                    AIInterpretationView(title: "\(dayLabel)의 심층 편지") {
                         AIProxy.interpretDaily(day: day, weekday: weekday, sinsals: sinsals,
                                                gender: gender, birthYear: birthYear)
                     }
@@ -706,7 +706,7 @@ struct AILetterSheet: View {
                 .padding(DT.pagePadding)
             }
             .background(DT.bg)
-            .navigationTitle("AI 심층 편지")
+            .navigationTitle("심층 편지")
             .navigationBarTitleDisplayMode(.inline)
             .dtCloseToolbar { dismiss() }
         }

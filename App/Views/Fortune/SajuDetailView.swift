@@ -132,11 +132,11 @@ struct SajuDetailView: View {
                     // 세운·오늘의 운세·월운·운세 달력
                     SajuAnalysisSections(r: r, pillars: pillars, phase: .timeline)
 
-                    AIInterpretationView(title: "달토끼 AI 심층 해석") {
+                    AIInterpretationView(title: "달토끼 심층 해석") {
                         AIProxy.interpretSaju(result: r, gender: profile.gender, birthYear: profile.year)
                     }
 
-                    AIContentPanel(title: "AI 콘텐츠", sections: AIContentSections.saju) { id, tone in
+                    AIContentPanel(title: "콘텐츠", sections: AIContentSections.saju) { id, tone in
                         AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                         birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
                                         sajuResult: r)

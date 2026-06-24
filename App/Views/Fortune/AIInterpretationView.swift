@@ -28,7 +28,7 @@ struct AIInterpretationView: View {
                     Button {
                         run()
                     } label: {
-                        Label("달토끼 AI 해석 받기", systemImage: "moon.stars.fill")
+                        Label("달토끼 해석 받기", systemImage: "moon.stars.fill")
                             .font(DT.sans(14, .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)

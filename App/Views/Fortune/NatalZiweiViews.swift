@@ -122,7 +122,7 @@ struct NatalDetailView: View {
                         AIInterpretationView(title: "달토끼 점성 해석") {
                             AIProxy.interpretNatal(chart: chart, gender: profile.gender, birthYear: profile.year)
                         }
-                        AIContentPanel(title: "점성술 콘텐츠", sections: AIContentSections.natal) { id, tone in
+                        AIContentPanel(title: "점성술 세부 해석", sections: AIContentSections.natal) { id, tone in
                             AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                             birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
                                             natalChart: chart)
@@ -445,7 +445,7 @@ struct ZiweiDetailView: View {
                         AIInterpretationView(title: "달토끼 자미 해석") {
                             AIProxy.interpretZiwei(chart: chart, liunian: appState.ziweiLiunian, daxianList: appState.ziweiDaxian ?? [], gender: profile.gender, birthYear: profile.year)
                         }
-                        AIContentPanel(title: "자미두수 콘텐츠", sections: AIContentSections.ziwei) { id, tone in
+                        AIContentPanel(title: "자미두수 세부 해석", sections: AIContentSections.ziwei) { id, tone in
                             AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                             birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute)
                         }

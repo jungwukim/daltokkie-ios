@@ -302,6 +302,14 @@
 - **검증**: 빌드 성공. 리딩(쓰리카드 과거/현재/미래·역방향·키워드)·설정 화면·도감 렌더 확인 ✅, 타로 AI 엔드포인트 실제 스트리밍 확인(태양 카드)
 - **참고**: 카드 데이터·드로우는 온디바이스(웹 동일), AI 리딩만 서버(기존 라우트 라이브, 배포 불필요)
 
+#### 38. AI 해석을 grabber 바텀 시트로 (2026-06-25)
+- **요청**: AI 해석이 화면 하단 인라인 표시 → 새 grabber(드래그 핸들) 창으로
+- **추가**(`AIInterpretationView.swift`): `AIResultSheet` — `.presentationDragIndicator(.visible)` + `.presentationDetents([.large, .medium])` 바텀 시트, 상단 동그라미 X(`CircleCloseButton`), 로딩/에러/다시시도, 본문 `FormattedAIText`
+- **변경**:
+  - `AIInterpretationView`(심층/점성/자미 해석): 인라인 결과 → 카드엔 버튼만, 탭 시 시트. 로딩 완료 후 "해석 다시 보기"
+  - `AIContentPanel`(세부 해석): 섹션 항목 탭 → 인라인 결과 제거하고 시트로 표시(제목=항목 라벨, 톤 유지)
+- **검증**(iPhone 17 Pro/iOS 26.2): grabber·제목·X·서식 본문·medium↔large 드래그 확인 ✅. 스트림/엔진 무변경(표현 레이어만)
+
 #### 37. AI 해석 마크다운 예쁘게 렌더 — FormattedAIText (2026-06-25)
 - **요청**: 세부/심층 해석이 날것의 AI 답변(##, **, ---, • 등 마커·특수문자 노출)이라 보기 안 좋음 → 예쁘게
 - **추가**(`AIInterpretationView.swift`): `FormattedAIText` 공용 뷰 — 스트리밍 마크다운을 블록 파싱(제목 #/##/###·한줄 굵게 소제목·글머리표 -/*/•·번호 1./1)·인용 >·구분선 ---)해 네이티브 스타일로 렌더, 인라인은 `AttributedString(markdown: .inlineOnlyPreservingWhitespace)`로 **굵게**/*기울임*/`코드` 처리, 실패 시 마커 제거 폴백

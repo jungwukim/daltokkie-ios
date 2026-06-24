@@ -26,6 +26,8 @@ struct AIContentPanel: View {
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var task: Task<Void, Never>?
+    @State private var showSheet = false
+    @State private var sheetTitle = ""
 
     private let tones: [(String, String)] = [("mz", "MZ 감성"), ("warm", "따뜻한 상담사"), ("classic", "전통 역술가")]
     private let cols = [GridItem(.adaptive(minimum: 96), spacing: 8)]
@@ -46,7 +48,11 @@ struct AIContentPanel: View {
                         Text(section.title).font(DT.sans(12, .bold)).foregroundStyle(DT.inkSoft)
                         LazyVGrid(columns: cols, spacing: 8) {
                             ForEach(section.items) { item in
-                                Button { run(item.id) } label: {
+                                Button {
+                                    sheetTitle = "\(item.emoji) \(item.label)"
+                                    showSheet = true
+                                    run(item.id)
+                                } label: {
                                     HStack(spacing: 4) {
                                         Text(item.emoji).font(.system(size: 13))
                                         Text(item.label).font(DT.sans(11, .medium)).lineLimit(1).minimumScaleFactor(0.7)
@@ -63,17 +69,12 @@ struct AIContentPanel: View {
                     }
                 }
 
-                if isLoading || !text.isEmpty || errorText != nil {
-                    Divider().padding(.vertical, 2)
-                    if let errorText {
-                        Text("불러오지 못했어요 (\(errorText))").font(DT.sans(12)).foregroundStyle(DT.inkSoft)
-                    } else if isLoading && text.isEmpty {
-                        HStack(spacing: 6) { ProgressView().controlSize(.small); Text("생성 중…").font(DT.sans(12)).foregroundStyle(DT.inkSoft) }
-                    } else {
-                        FormattedAIText(text: text)
-                    }
-                }
             }
+        }
+        .sheet(isPresented: $showSheet) {
+            AIResultSheet(title: sheetTitle, text: text, isLoading: isLoading, errorText: errorText,
+                          onClose: { showSheet = false },
+                          onRetry: { if let id = activeId { run(id) } })
         }
         .onDisappear { task?.cancel() }
     }

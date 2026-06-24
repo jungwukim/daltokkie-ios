@@ -1,4 +1,4 @@
-// AI 심층 해석 카드 — 프록시 스트리밍 표시 (유료/심층 영역)
+// AI 심층 해석 — 버튼 탭 시 grabber 바텀 시트로 스트리밍 표시 (유료/심층 영역)
 
 import SwiftUI
 
@@ -10,38 +10,35 @@ struct AIInterpretationView: View {
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var task: Task<Void, Never>?
+    @State private var showSheet = false
 
     var body: some View {
         CraftCard {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    SectionTitle(text: title)
-                    Spacer()
-                    if isLoading { ProgressView().controlSize(.small) }
-                }
-
-                if let errorText {
-                    Text("해석을 불러오지 못했어요 (\(errorText))\n네트워크 연결을 확인해 주세요.")
-                        .font(DT.sans(12))
-                        .foregroundStyle(DT.inkSoft)
-                } else if text.isEmpty && !isLoading {
-                    Button {
-                        run()
-                    } label: {
-                        Label("달토끼 해석 받기", systemImage: "moon.stars.fill")
-                            .font(DT.sans(14, .bold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(DT.night)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                } else {
-                    FormattedAIText(text: text)
+                SectionTitle(text: title)
+                Button {
+                    openSheet()
+                } label: {
+                    Label(text.isEmpty ? "달토끼 해석 받기" : "해석 다시 보기", systemImage: "moon.stars.fill")
+                        .font(DT.sans(14, .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(DT.night)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
+        .sheet(isPresented: $showSheet) {
+            AIResultSheet(title: title, text: text, isLoading: isLoading, errorText: errorText,
+                          onClose: { showSheet = false }, onRetry: { run() })
+        }
         .onDisappear { task?.cancel() }
+    }
+
+    private func openSheet() {
+        showSheet = true
+        if text.isEmpty && !isLoading { run() }
     }
 
     private func run() {
@@ -58,6 +55,57 @@ struct AIInterpretationView: View {
             }
             isLoading = false
         }
+    }
+}
+
+/// AI 결과 grabber 바텀 시트 — 드래그 핸들 + 닫기, 부모가 소유한 스트림 상태 표시
+struct AIResultSheet: View {
+    let title: String
+    let text: String
+    let isLoading: Bool
+    let errorText: String?
+    let onClose: () -> Void
+    let onRetry: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Group {
+                    if errorText != nil {
+                        VStack(spacing: 12) {
+                            Text("해석을 불러오지 못했어요\n네트워크 연결을 확인해 주세요.")
+                                .font(DT.sans(13)).foregroundStyle(DT.inkSoft)
+                                .multilineTextAlignment(.center)
+                            Button(action: onRetry) {
+                                Text("다시 시도").font(DT.sans(13, .semibold)).foregroundStyle(DT.accent)
+                            }
+                        }
+                        .frame(maxWidth: .infinity).padding(.top, 48)
+                    } else if text.isEmpty && isLoading {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("달토끼가 해석 중이에요…").font(DT.sans(13)).foregroundStyle(DT.inkSoft)
+                        }
+                        .frame(maxWidth: .infinity).padding(.top, 48)
+                    } else {
+                        FormattedAIText(text: text)
+                    }
+                }
+                .padding(.horizontal, DT.pagePadding)
+                .padding(.vertical, 10)
+            }
+            .background(DT.bg)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { CircleCloseButton(action: onClose) }
+                if isLoading {
+                    ToolbarItem(placement: .topBarLeading) { ProgressView().controlSize(.small) }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .presentationDetents([.large, .medium])
     }
 }
 

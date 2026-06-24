@@ -70,7 +70,7 @@ struct AIContentPanel: View {
                     } else if isLoading && text.isEmpty {
                         HStack(spacing: 6) { ProgressView().controlSize(.small); Text("생성 중…").font(DT.sans(12)).foregroundStyle(DT.inkSoft) }
                     } else {
-                        Text(text).font(DT.sans(13)).foregroundStyle(DT.ink).lineSpacing(5).textSelection(.enabled)
+                        FormattedAIText(text: text)
                     }
                 }
             }

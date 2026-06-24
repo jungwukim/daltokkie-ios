@@ -89,6 +89,7 @@ import SajuKit
 
 struct PillarGrid: View {
     let result: FortuneTellerResult
+    var onDark: Bool = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -99,33 +100,37 @@ struct PillarGrid: View {
         }
     }
 
+    private var titleColor: Color { onDark ? .white.opacity(0.6) : DT.inkSoft }
+    private var koreanColor: Color { onDark ? .white.opacity(0.6) : DT.inkSoft }
+    private var cellBg: Color { onDark ? .white.opacity(0.07) : DT.bg }
+
     private func pillarColumn(_ title: String, _ pillar: UIPillar?) -> some View {
         VStack(spacing: 6) {
             Text(title)
                 .font(DT.sans(11))
-                .foregroundStyle(DT.inkSoft)
+                .foregroundStyle(titleColor)
             if let p = pillar {
                 Text(p.stem.hanja)
                     .font(DT.serif(30, .bold))
-                    .foregroundStyle(DT.ink)
+                    .foregroundStyle(onDark ? sajuElementColor(p.stem.element) : DT.ink)
                 Text(p.branch.hanja)
                     .font(DT.serif(30, .bold))
-                    .foregroundStyle(DT.ink)
+                    .foregroundStyle(onDark ? sajuElementColor(p.branch.element) : DT.ink)
                 Text("\(p.stem.korean)\(p.branch.korean)")
                     .font(DT.sans(11))
-                    .foregroundStyle(DT.inkSoft)
+                    .foregroundStyle(koreanColor)
             } else {
                 Text("?")
                     .font(DT.serif(30, .bold))
-                    .foregroundStyle(DT.inkSoft.opacity(0.5))
+                    .foregroundStyle((onDark ? Color.white : DT.inkSoft).opacity(0.5))
                 Text("미상")
                     .font(DT.sans(11))
-                    .foregroundStyle(DT.inkSoft)
+                    .foregroundStyle(koreanColor)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(DT.bg)
+        .background(cellBg)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

@@ -48,6 +48,21 @@ enum DTFonts {
     }
 }
 
+/// 오행(목·화·토·금·수) 색 — 한국 전통 톤 + 다크/라이트 가독성 보정
+func sajuElementColor(_ element: String) -> Color {
+    switch element {
+    case "Wood":  return Color(hex: 0x6FA876)   // 목 — 청록
+    case "Fire":  return Color(hex: 0xD9785E)   // 화 — 적
+    case "Earth": return Color(hex: 0xC9A24B)   // 토 — 황
+    case "Metal": return Color(hex: 0xAEB2BC)   // 금 — 은백
+    case "Water": return Color(hex: 0x5B8FB9)   // 수 — 청
+    default:      return DT.inkSoft
+    }
+}
+func sajuElementKo(_ element: String) -> String {
+    ["Wood": "목", "Fire": "화", "Earth": "토", "Metal": "금", "Water": "수"][element] ?? element
+}
+
 extension Color {
     init(hex: UInt32) {
         self.init(

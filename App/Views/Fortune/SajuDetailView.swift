@@ -21,33 +21,8 @@ struct SajuDetailView: View {
                 let daeun = HoshinDaeUn.calculateDaeUn(r.raw)
 
                 VStack(spacing: 16) {
-                    // 히어로: 일간 프로필
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(r.displayHanja)
-                                .font(DT.serif(19, .bold))
-                                .foregroundStyle(DT.ink)
-                            if let p = r.dayMasterProfile {
-                                Text("\(p.name) · \(p.image)")
-                                    .font(DT.sans(13, .semibold))
-                                    .foregroundStyle(DT.accent)
-                                Text(p.traits)
-                                    .font(DT.sans(13))
-                                    .foregroundStyle(DT.inkSoft)
-                                    .lineSpacing(4)
-                            }
-                        }
-                    }
-
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            SectionTitle(text: "사주팔자")
-                            PillarGrid(result: r)
-                            DetailRow(label: "오행", value: elementsLine(r))
-                            DetailRow(label: "운의 흐름", value: r.energyFlow)
-                            DetailRow(label: "띠", value: r.animal)
-                        }
-                    }
+                    // 밤하늘 히어로: 일간 정체성 + 사주팔자 + 핵심 요약
+                    sajuHero(r)
 
                     // 오행 분포
                     SajuAnalysisSections(r: r, pillars: pillars, phase: .elements)
@@ -181,11 +156,50 @@ struct SajuDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func elementsLine(_ r: FortuneTellerResult) -> String {
-        let ko = ["Wood": "목", "Fire": "화", "Earth": "토", "Metal": "금", "Water": "수"]
-        return ["Wood", "Fire", "Earth", "Metal", "Water"]
-            .map { "\(ko[$0]!) \(r.elements.counts[$0] ?? 0)" }
-            .joined(separator: " · ")
+    private func animalKo(_ en: String) -> String {
+        ["Rat": "쥐", "Ox": "소", "Tiger": "호랑이", "Rabbit": "토끼", "Dragon": "용", "Snake": "뱀",
+         "Horse": "말", "Goat": "양", "Monkey": "원숭이", "Rooster": "닭", "Dog": "개", "Pig": "돼지"][en] ?? en
+    }
+
+    // MARK: 밤하늘 히어로
+    private func sajuHero(_ r: FortuneTellerResult) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DT.radius)
+                .fill(LinearGradient(colors: [Color(hex: 0x303663), Color(hex: 0x1C1F38)],
+                                     startPoint: .top, endPoint: .bottom))
+            StarField()
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(r.displayHanja)
+                            .font(DT.serif(20, .bold)).foregroundStyle(.white)
+                        Spacer()
+                        Text("\(animalKo(r.animal)) 띠")
+                            .font(DT.sans(12, .semibold)).foregroundStyle(Color(hex: 0xE8C77A))
+                    }
+                    if let p = r.dayMasterProfile {
+                        Text("\(p.name) · \(p.image)")
+                            .font(DT.sans(13, .semibold)).foregroundStyle(Color(hex: 0xE8C77A))
+                        Text(p.traits)
+                            .font(DT.sans(12)).foregroundStyle(.white.opacity(0.72)).lineSpacing(4)
+                    }
+                }
+
+                PillarGrid(result: r, onDark: true)
+
+                HStack(spacing: 10) {
+                    DarkStatChip(value: "\(r.dayMaster.korean)(\(r.dayMaster.hanja))",
+                                 label: "일간(日干)", tint: sajuElementColor(r.dayMaster.element))
+                    DarkStatChip(value: sajuElementKo(r.elements.dominant),
+                                 label: "강한 오행", tint: sajuElementColor(r.elements.dominant))
+                    DarkStatChip(value: sajuElementKo(r.elements.weakest),
+                                 label: "약한 오행", tint: sajuElementColor(r.elements.weakest))
+                }
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DT.radius))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(.white.opacity(0.10), lineWidth: 1))
     }
 
     private func tenGodRow(_ title: String, _ stemGod: String, _ branchGod: String) -> some View {

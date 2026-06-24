@@ -47,6 +47,29 @@ struct StarField: View {
     }
 }
 
+/// 밤하늘 히어로용 요약 칩 (값 + 라벨, 선택적 원소색 틴트)
+struct DarkStatChip: View {
+    let value: String
+    let label: String
+    var tint: Color? = nil
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(DT.sans(13, .bold)).foregroundStyle(.white)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(label)
+                .font(DT.sans(9)).foregroundStyle(.white.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 11)
+        .background((tint ?? .white).opacity(tint == nil ? 0.08 : 0.18),
+                    in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12)
+            .stroke((tint ?? .white).opacity(tint == nil ? 0.10 : 0.35), lineWidth: 0.5))
+    }
+}
+
 // MARK: - 점성술
 
 struct NatalDetailView: View {
@@ -327,6 +350,8 @@ struct ZiweiDetailView: View {
         ScrollView {
             if let chart = appState.ensureZiwei() {
                 VStack(spacing: 16) {
+                    ziweiHero(chart)
+
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
                             SectionTitle(text: "紫微斗數 명반")
@@ -438,5 +463,33 @@ struct ZiweiDetailView: View {
         .background(DT.bg)
         .navigationTitle("자미두수")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: 밤하늘 히어로 (핵심 요약)
+    private func ziweiHero(_ chart: ZiweiChart) -> some View {
+        let ming = chart.palaces.values.first { $0.name == "命宮" }
+        let mingStars = ming.map { $0.stars.prefix(2).map { $0.name }.joined(separator: "·") } ?? ""
+        return ZStack {
+            RoundedRectangle(cornerRadius: DT.radius)
+                .fill(LinearGradient(colors: [Color(hex: 0x303663), Color(hex: 0x1C1F38)],
+                                     startPoint: .top, endPoint: .bottom))
+            StarField()
+            VStack(spacing: 14) {
+                HStack {
+                    Text("紫微斗數 명반")
+                        .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(.white)
+                    Spacer()
+                    Text("✦").font(.system(size: 14)).foregroundStyle(Color(hex: 0xE8C77A))
+                }
+                HStack(spacing: 10) {
+                    DarkStatChip(value: mingStars.isEmpty ? "—" : mingStars, label: "명궁 주성")
+                    DarkStatChip(value: chart.wuXingJu.name, label: "오행국")
+                    DarkStatChip(value: chart.shenGongZhi, label: "신궁")
+                }
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DT.radius))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(.white.opacity(0.10), lineWidth: 1))
     }
 }

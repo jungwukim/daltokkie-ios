@@ -548,7 +548,7 @@ struct LuckyIndexDetailView: View {
             .background(DT.bg)
             .navigationTitle("오늘의 행운지수")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+            .dtCloseToolbar { dismiss() }
         }
     }
 
@@ -613,7 +613,7 @@ struct LuckyItemsDetailView: View {
             .background(DT.bg)
             .navigationTitle("\(dayLabel)의 행운 아이템")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+            .dtCloseToolbar { dismiss() }
         }
     }
 }
@@ -660,7 +660,7 @@ struct ConditionsDetailView: View {
             .background(DT.bg)
             .navigationTitle("\(dayLabel)의 운세 컨디션")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+            .dtCloseToolbar { dismiss() }
         }
     }
 }
@@ -708,7 +708,7 @@ struct AILetterSheet: View {
             .background(DT.bg)
             .navigationTitle("AI 심층 편지")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
+            .dtCloseToolbar { dismiss() }
         }
     }
 }

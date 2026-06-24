@@ -86,3 +86,26 @@ struct SectionTitle: View {
             .foregroundStyle(DT.ink)
     }
 }
+
+/// 모달 닫기 버튼 — 동그라미 + X (시스템 뒤로 버튼 원형과 통일)
+struct CircleCloseButton: View {
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(DT.ink)
+                .frame(width: 30, height: 30)
+                .background(DT.card, in: Circle())
+                .overlay(Circle().stroke(DT.line, lineWidth: 1))
+        }
+        .accessibilityLabel("닫기")
+    }
+}
+
+extension View {
+    /// 상단 우측에 동그라미 X 닫기 버튼 추가 (모달/시트 공통)
+    func dtCloseToolbar(_ action: @escaping () -> Void) -> some View {
+        toolbar { ToolbarItem(placement: .topBarTrailing) { CircleCloseButton(action: action) } }
+    }
+}

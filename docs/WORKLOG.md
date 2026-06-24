@@ -302,6 +302,15 @@
 - **검증**: 빌드 성공. 리딩(쓰리카드 과거/현재/미래·역방향·키워드)·설정 화면·도감 렌더 확인 ✅, 타로 AI 엔드포인트 실제 스트리밍 확인(태양 카드)
 - **참고**: 카드 데이터·드로우는 온디바이스(웹 동일), AI 리딩만 서버(기존 라우트 라이브, 배포 불필요)
 
+#### 33. 타로 네이티브 내비게이션 + 동그라미 X 닫기 버튼 (2026-06-25)
+- **요청 1**: "타로 페이지에서 이전 페이지로 어떻게 이동?" → "ios 네이티브 방식을 왜 사용 안 해?"
+  - **변경**(`TarotView`): 커스텀 상태 토글(`if let drawn`) → `NavigationStack` + `.navigationDestination(item: $session)` push. 시스템 뒤로 버튼/엣지 스와이프 백 동작. 리딩 화면을 별도 `TarotReadingView`로 분리, `TarotSession: Identifiable, Hashable`(id 기반)
+  - **검증**: 빌드 성공. push 시 좌상단 시스템 뒤로(원형 chevron) + 중앙 타이틀 "쓰리카드 리딩" 확인 ✅
+- **요청 2**: "앱 내 페이지들 상단 닫기 버튼은 동그라미버튼에 X로 표시"
+  - **추가**(`Theme.swift`): `CircleCloseButton`(동그라미 + X, 시스템 뒤로 버튼 원형과 통일) + `.dtCloseToolbar { }` 모디파이어
+  - **적용**: 홈 시트 4개(행운지수/행운아이템/운세컨디션/달빛편지)의 `Button("닫기")` → `.dtCloseToolbar { dismiss() }`
+  - **검증**: 빌드 성공. 상단 우측 동그라미 X 렌더 확인 ✅
+
 #### 32. 궁합 웹 수준 고도화 — 강점/약점/조언 (네이티브 포팅) (2026-06-24)
 - **요청**: 궁합도 웹 수준으로 강점/약점/조언까지
 - **포팅**(`CompatibilityView`, 온디바이스): 웹 `fortuneteller.ts` `ftCheckCompatibility`/`computeCompatibilityScore`/`generateCompatAnalysis`/`getZodiacRelation` 규칙을 Swift로 그대로 이식 — 서버 불필요

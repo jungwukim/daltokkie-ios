@@ -34,7 +34,7 @@
   타로(스프레드 원/쓰리/켈틱·주제·질문·플립 리딩+역방향·키워드·AI 타로 + 78장 도감 — 웹 데이터 포팅) / 부적함(캐릭터 5종) / 마이(프로필·재설정)
 - 차트: LuckyLineChart / FortuneRadarChart / FortuneBarChart (Path/Canvas)
 - AIProxyClient: daltokkie.vercel.app 스트리밍. `interpretSaju`(원국) + **`interpretDaily`(일일 심층 편지 → `/api/daily/interpret`, saju-api 신설, 배포 필요)**
-- 검증: iPhone 16 Pro(iOS 18.0) 빌드·설치·실행 ✅
+- 검증: iPhone 17 Pro(iOS 26.2) 빌드·설치·실행 ✅ (2026-06-25)
 
 ## 남은 작업 (다음 단계)
 - 타로/궁합 AI 해석 연결 (AIProxy.stream 사용, 엔드포인트만 추가)

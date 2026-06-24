@@ -25,7 +25,7 @@
 ## 현재 상태
 
 - **브랜치**: main
-- **최신 빌드**: 성공 (2026-06-22, iPhone 16 Pro / iOS 18.0)
+- **최신 빌드**: 성공 (2026-06-25, iPhone 17 Pro / iOS 26.2 — 실기기 시뮬 설치·실행 확인)
 - **엔진 테스트**: 13건 전부 통과 (단, **daily-fortune 픽스처는 자체 알고리즘 기준으로 재생성** — saju-api 비트재현 아님, DEC-014. 코어 사주/천체력/자미두수 픽스처는 정통 재현 유지)
 - **미커밋 변경**(명리 강화+AI): `App/{AIProxyClient,Views/Home/*}`, `Engine/{DailyFortune,HoshinSinSal,daily-fortune.json}`, 신규 `LuckyItemReason.swift`. **별도 레포 `saju-api`**: `app/api/daily/interpret/route.ts` 신규
 - **배포 대기**: AI 심층 편지는 `saju-api` vercel 배포 + `AI_API_KEY` 설정 시 동작(현재 프로덕션 404)
@@ -310,6 +310,8 @@
   - **추가**(`Theme.swift`): `CircleCloseButton`(동그라미 + X, 시스템 뒤로 버튼 원형과 통일) + `.dtCloseToolbar { }` 모디파이어
   - **적용**: 홈 시트 4개(행운지수/행운아이템/운세컨디션/달빛편지)의 `Button("닫기")` → `.dtCloseToolbar { dismiss() }`
   - **검증**: 빌드 성공. 상단 우측 동그라미 X 렌더 확인 ✅
+- **최종 검증 (iPhone 17 Pro / iOS 26.2)**: 정식 빌드(MainTabView 루트) 설치·실행, 홈/시트/타로 정상 ✅
+- **이슈/교훈**: 사용자가 "X 눌러도 안 닫힌다"고 한 화면은 **닫기 버튼 캡처용 임시 미리보기 루트**가 시뮬레이터에 설치된 채 남아 있던 것(루트라 dismiss 대상 없음). 소스는 이미 정상 복원·커밋 상태였음. → **검증용 TEMP 빌드는 캡처 직후 정식 빌드로 재설치할 것**(소스 revert만으로는 시뮬 설치본이 안 바뀜)
 
 #### 32. 궁합 웹 수준 고도화 — 강점/약점/조언 (네이티브 포팅) (2026-06-24)
 - **요청**: 궁합도 웹 수준으로 강점/약점/조언까지

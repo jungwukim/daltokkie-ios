@@ -1,8 +1,51 @@
 // 점성술 + 자미두수 상세 (웹 mobile-natal-page / mobile-ziwei-page 대응)
+// 점성술: 밤하늘 히어로 + Big3 + 네이티브 카드 섹션 리디자인
 
 import SwiftUI
 import NatalKit
 import ZiweiKit
+
+// MARK: - 점성술 공용 (원소색/별자리 인덱스)
+
+private let natalSignIndex: [String: Int] = [
+    "Aries": 0, "Taurus": 1, "Gemini": 2, "Cancer": 3, "Leo": 4, "Virgo": 5,
+    "Libra": 6, "Scorpio": 7, "Sagittarius": 8, "Capricorn": 9, "Aquarius": 10, "Pisces": 11,
+]
+/// 원소색 (불=테라코타 / 흙=초록 / 바람=골드 / 물=블루) — 크래프트지 카드용 채도
+private func natalElementColor(_ sign: String) -> Color {
+    switch (natalSignIndex[sign] ?? 0) % 4 {
+    case 0:  return Color(hex: 0xC2714E)   // Fire
+    case 1:  return Color(hex: 0x5E9A6E)   // Earth
+    case 2:  return Color(hex: 0xB58A2E)   // Air
+    default: return Color(hex: 0x4E7FA8)   // Water
+    }
+}
+private func natalElementKo(_ sign: String) -> String {
+    switch (natalSignIndex[sign] ?? 0) % 4 {
+    case 0:  return "불"
+    case 1:  return "흙"
+    case 2:  return "바람"
+    default: return "물"
+    }
+}
+
+/// 밤하늘 별 배경 (결정적 — Date/random 미사용)
+struct StarField: View {
+    var body: some View {
+        Canvas { ctx, size in
+            func frac(_ v: Double) -> Double { v - floor(v) }
+            for i in 0..<48 {
+                let fx = frac(sin(Double(i) * 12.9898) * 43758.5453)
+                let fy = frac(sin(Double(i) * 78.233) * 12543.123)
+                let r  = 0.6 + frac(sin(Double(i) * 3.17) * 991.0) * 1.7
+                let op = 0.18 + frac(sin(Double(i) * 5.71) * 557.0) * 0.55
+                let x = fx * size.width, y = fy * size.height
+                ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r, height: r)),
+                         with: .color(.white.opacity(op)))
+            }
+        }
+    }
+}
 
 // MARK: - 점성술
 
@@ -15,6 +58,11 @@ struct NatalDetailView: View {
         "Neptune": "해왕성", "Pluto": "명왕성", "Chiron": "키론",
         "NorthNode": "북교점", "SouthNode": "남교점", "Fortuna": "행운점",
     ]
+    private let planetGlyph: [String: String] = [
+        "Sun": "☉", "Moon": "☽", "Mercury": "☿", "Venus": "♀", "Mars": "♂",
+        "Jupiter": "♃", "Saturn": "♄", "Uranus": "♅", "Neptune": "♆", "Pluto": "♇",
+        "Chiron": "⚷", "NorthNode": "☊", "SouthNode": "☋", "Fortuna": "⊗",
+    ]
     private let zodiacKo: [String: String] = [
         "Aries": "양자리", "Taurus": "황소자리", "Gemini": "쌍둥이자리", "Cancer": "게자리",
         "Leo": "사자자리", "Virgo": "처녀자리", "Libra": "천칭자리", "Scorpio": "전갈자리",
@@ -23,107 +71,29 @@ struct NatalDetailView: View {
     private let aspectKo: [String: String] = [
         "conjunction": "합", "sextile": "육분", "square": "사각", "trine": "삼분", "opposition": "충",
     ]
+    private let aspectGlyph: [String: String] = [
+        "conjunction": "☌", "sextile": "⚹", "square": "□", "trine": "△", "opposition": "☍",
+    ]
+    private func aspectColor(_ type: String) -> Color {
+        switch type {
+        case "conjunction": return Color(hex: 0x8B5CF6)
+        case "sextile":     return Color(hex: 0x22A06B)
+        case "trine":       return Color(hex: 0x3B7FD4)
+        case "square":      return Color(hex: 0xD9534F)
+        case "opposition":  return Color(hex: 0xE07B2E)
+        default:            return DT.inkSoft
+        }
+    }
 
     var body: some View {
         ScrollView {
             if let chart = appState.ensureNatal() {
                 VStack(spacing: 16) {
-                    if chart.angles != nil, !chart.houses.isEmpty {
-                        CraftCard {
-                            VStack(alignment: .leading, spacing: 10) {
-                                SectionTitle(text: "출생 차트")
-                                NatalWheelChart(chart: chart)
-                            }
-                        }
-                    }
-
-                    if let angles = chart.angles {
-                        CraftCard {
-                            VStack(alignment: .leading, spacing: 10) {
-                                SectionTitle(text: "4대 축")
-                                DetailRow(label: "ASC 상승점", value: angleText(angles.asc))
-                                DetailRow(label: "MC 중천점", value: angleText(angles.mc))
-                                DetailRow(label: "DESC 하강점", value: angleText(angles.desc))
-                                DetailRow(label: "IC 천저점", value: angleText(angles.ic))
-                            }
-                        }
-                    }
-
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            SectionTitle(text: "행성 배치")
-                            ForEach(chart.planets, id: \.id) { p in
-                                HStack {
-                                    Text(planetKo[p.id] ?? p.id)
-                                        .font(DT.sans(13, .medium))
-                                        .foregroundStyle(DT.ink)
-                                        .frame(width: 64, alignment: .leading)
-                                    Text(zodiacKo[p.sign] ?? p.sign)
-                                        .font(DT.sans(13))
-                                        .foregroundStyle(DT.accent)
-                                    Text(String(format: "%.1f°", p.degreeInSign))
-                                        .font(DT.sans(12))
-                                        .foregroundStyle(DT.inkSoft)
-                                    if p.isRetrograde {
-                                        Text("℞")
-                                            .font(DT.sans(12, .bold))
-                                            .foregroundStyle(DT.accent)
-                                    }
-                                    Spacer()
-                                    if let house = p.house {
-                                        Text("\(house)하우스")
-                                            .font(DT.sans(12))
-                                            .foregroundStyle(DT.inkSoft)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if !chart.houses.isEmpty {
-                        CraftCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                SectionTitle(text: "하우스 (Placidus)")
-                                ForEach(chart.houses, id: \.number) { h in
-                                    HStack {
-                                        Text("\(h.number)하우스")
-                                            .font(DT.sans(12))
-                                            .foregroundStyle(DT.inkSoft)
-                                            .frame(width: 64, alignment: .leading)
-                                        Text(zodiacKo[h.sign] ?? h.sign)
-                                            .font(DT.sans(13))
-                                            .foregroundStyle(DT.accent)
-                                        Text(String(format: "%.1f°", h.degreeInSign))
-                                            .font(DT.sans(12))
-                                            .foregroundStyle(DT.inkSoft)
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if !chart.aspects.isEmpty {
-                        CraftCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                SectionTitle(text: "주요 어스펙트")
-                                ForEach(Array(chart.aspects.prefix(15).enumerated()), id: \.offset) { _, a in
-                                    HStack {
-                                        Text("\(planetKo[a.planet1] ?? a.planet1) – \(planetKo[a.planet2] ?? a.planet2)")
-                                            .font(DT.sans(13))
-                                            .foregroundStyle(DT.ink)
-                                        Spacer()
-                                        Text(aspectKo[a.type] ?? a.type)
-                                            .font(DT.sans(12, .semibold))
-                                            .foregroundStyle(DT.accent)
-                                        Text(String(format: "오차 %.1f°", a.orb))
-                                            .font(DT.sans(11))
-                                            .foregroundStyle(DT.inkSoft)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    celestialHero(chart)
+                    if let angles = chart.angles { axisSection(angles) }
+                    planetSection(chart)
+                    if !chart.houses.isEmpty { houseSection(chart) }
+                    if !chart.aspects.isEmpty { aspectSection(chart) }
 
                     if let profile = appState.profile {
                         AIInterpretationView(title: "달토끼 AI 점성 해석") {
@@ -150,8 +120,191 @@ struct NatalDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func angleText(_ p: AnglePoint) -> String {
-        "\(zodiacKo[p.sign] ?? p.sign) \(String(format: "%.1f°", p.degreeInSign))"
+    // MARK: 밤하늘 히어로 (원형 차트 + Big3)
+    private func celestialHero(_ chart: NatalChart) -> some View {
+        let hasWheel = chart.angles != nil && !chart.houses.isEmpty
+        return ZStack {
+            RoundedRectangle(cornerRadius: DT.radius)
+                .fill(LinearGradient(colors: [Color(hex: 0x303663), Color(hex: 0x1C1F38)],
+                                     startPoint: .top, endPoint: .bottom))
+            StarField()
+            VStack(spacing: 14) {
+                HStack {
+                    Text("출생 차트")
+                        .font(DT.serif(16, .bold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("☽")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color(hex: 0xE8C77A))
+                }
+                if hasWheel {
+                    NatalWheelChart(chart: chart, onDark: true)
+                        .padding(.horizontal, 2)
+                }
+                big3Row(chart)
+            }
+            .padding(18)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DT.radius))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(.white.opacity(0.10), lineWidth: 1))
+    }
+
+    private func big3Row(_ chart: NatalChart) -> some View {
+        let sun = chart.planets.first { $0.id == "Sun" }
+        let moon = chart.planets.first { $0.id == "Moon" }
+        return HStack(spacing: 10) {
+            if let sun { big3Cell(glyph: "☉", title: "태양", sign: sun.sign) }
+            if let moon { big3Cell(glyph: "☽", title: "달", sign: moon.sign) }
+            if let asc = chart.angles?.asc { big3Cell(glyph: "ASC", title: "상승궁", sign: asc.sign) }
+        }
+    }
+
+    private func big3Cell(glyph: String, title: String, sign: String) -> some View {
+        VStack(spacing: 4) {
+            Text(glyph)
+                .font(.system(size: glyph.count > 1 ? 14 : 22, weight: .semibold))
+                .foregroundStyle(Color(hex: 0xE8C77A))
+                .frame(height: 26)
+            Text(zodiacKo[sign] ?? sign)
+                .font(DT.sans(12, .bold)).foregroundStyle(.white)
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(title)
+                .font(DT.sans(9)).foregroundStyle(.white.opacity(0.55))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 11)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.10), lineWidth: 0.5))
+    }
+
+    // MARK: 4대 축 (2×2 그리드)
+    private func axisSection(_ a: NatalAngles) -> some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "4대 축")
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
+                    axisCell("ASC", "상승점", a.asc)
+                    axisCell("MC", "중천점", a.mc)
+                    axisCell("DESC", "하강점", a.desc)
+                    axisCell("IC", "천저점", a.ic)
+                }
+            }
+        }
+    }
+
+    private func axisCell(_ code: String, _ ko: String, _ p: AnglePoint) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 5) {
+                Text(code).font(DT.sans(11, .bold)).foregroundStyle(DT.accent)
+                Text(ko).font(DT.sans(9)).foregroundStyle(DT.inkSoft)
+            }
+            HStack(spacing: 6) {
+                Circle().fill(natalElementColor(p.sign)).frame(width: 6, height: 6)
+                Text("\(zodiacKo[p.sign] ?? p.sign) \(String(format: "%.1f°", p.degreeInSign))")
+                    .font(DT.sans(13, .semibold)).foregroundStyle(DT.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(11)
+        .background(DT.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: 행성 배치 (글리프 원 + 별자리 칩)
+    private func planetSection(_ chart: NatalChart) -> some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "행성 배치")
+                ForEach(chart.planets, id: \.id) { p in planetRow(p) }
+            }
+        }
+    }
+
+    private func planetRow(_ p: PlanetPosition) -> some View {
+        let col = natalElementColor(p.sign)
+        return HStack(spacing: 11) {
+            ZStack {
+                Circle().fill(col.opacity(0.14)).frame(width: 36, height: 36)
+                Text(planetGlyph[p.id] ?? "•").font(.system(size: 17)).foregroundStyle(col)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(planetKo[p.id] ?? p.id).font(DT.sans(13, .semibold)).foregroundStyle(DT.ink)
+                HStack(spacing: 6) {
+                    if let house = p.house {
+                        Text("\(house)하우스").font(DT.sans(9)).foregroundStyle(DT.inkSoft)
+                    }
+                    if p.isRetrograde {
+                        Text("℞ 역행").font(DT.sans(9, .semibold)).foregroundStyle(DT.accent)
+                    }
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(zodiacKo[p.sign] ?? p.sign)
+                    .font(DT.sans(11, .semibold)).foregroundStyle(col)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(col.opacity(0.12), in: Capsule())
+                Text(String(format: "%.1f°", p.degreeInSign)).font(DT.sans(10)).foregroundStyle(DT.inkSoft)
+            }
+        }
+    }
+
+    // MARK: 하우스 (2열 그리드)
+    private func houseSection(_ chart: NatalChart) -> some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "하우스 (Placidus)")
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())], spacing: 8) {
+                    ForEach(chart.houses, id: \.number) { h in houseCell(h) }
+                }
+            }
+        }
+    }
+
+    private func houseCell(_ h: NatalHouse) -> some View {
+        HStack(spacing: 8) {
+            Text("\(h.number)")
+                .font(DT.sans(11, .bold)).foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(DT.night, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(zodiacKo[h.sign] ?? h.sign)
+                    .font(DT.sans(12, .semibold)).foregroundStyle(natalElementColor(h.sign))
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Text(String(format: "%.1f°", h.degreeInSign)).font(DT.sans(10)).foregroundStyle(DT.inkSoft)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(8)
+        .background(DT.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    // MARK: 어스펙트 (글리프 + 색)
+    private func aspectSection(_ chart: NatalChart) -> some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "주요 어스펙트")
+                ForEach(Array(chart.aspects.prefix(15).enumerated()), id: \.offset) { _, a in
+                    let col = aspectColor(a.type)
+                    HStack(spacing: 9) {
+                        Text(aspectGlyph[a.type] ?? "•")
+                            .font(.system(size: 14, weight: .bold)).foregroundStyle(col)
+                            .frame(width: 20)
+                        Text("\(planetKo[a.planet1] ?? a.planet1) – \(planetKo[a.planet2] ?? a.planet2)")
+                            .font(DT.sans(13)).foregroundStyle(DT.ink)
+                        Spacer()
+                        Text(aspectKo[a.type] ?? a.type)
+                            .font(DT.sans(11, .semibold)).foregroundStyle(col)
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(col.opacity(0.12), in: Capsule())
+                        Text(String(format: "%.1f°", a.orb)).font(DT.sans(10)).foregroundStyle(DT.inkSoft)
+                    }
+                }
+            }
+        }
     }
 }
 

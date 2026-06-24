@@ -1,11 +1,13 @@
 // 점성술 원형 차트 — 웹 natal-wheel-chart 포팅 (Canvas)
 // 황도 12별자리 띠(원소색) + 12하우스 + 행성 글리프 + 어스펙트 라인 + ASC/MC 축
+// onDark: 밤하늘 히어로 배경용 다크 테마
 
 import SwiftUI
 import NatalKit
 
 struct NatalWheelChart: View {
     let chart: NatalChart
+    var onDark: Bool = false
 
     private let planetGlyph: [String: String] = [
         "Sun": "☉", "Moon": "☽", "Mercury": "☿", "Venus": "♀", "Mars": "♂",
@@ -13,26 +15,44 @@ struct NatalWheelChart: View {
         "Chiron": "⚷", "NorthNode": "☊", "SouthNode": "☋", "Fortuna": "⊗",
     ]
     private let signGlyphs = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"]
-    private let signNames = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
+
     // 원소색 (불/흙/바람/물) — 별자리 인덱스 % 4
     private func signFill(_ i: Int) -> Color {
+        if onDark {
+            switch i % 4 {
+            case 0:  return Color(hex: 0xE8927C).opacity(0.16)  // Fire
+            case 1:  return Color(hex: 0x8FBF9F).opacity(0.16)  // Earth
+            case 2:  return Color(hex: 0xE8C77A).opacity(0.16)  // Air
+            default: return Color(hex: 0x88B4E0).opacity(0.16)  // Water
+            }
+        }
         switch i % 4 {
-        case 0: return Color(hex: 0xFEF2F2)   // Fire
-        case 1: return Color(hex: 0xF0FDF4)   // Earth
-        case 2: return Color(hex: 0xFEFCE8)   // Air
-        default: return Color(hex: 0xEFF6FF)  // Water
+        case 0:  return Color(hex: 0xFEF2F2)   // Fire
+        case 1:  return Color(hex: 0xF0FDF4)   // Earth
+        case 2:  return Color(hex: 0xFEFCE8)   // Air
+        default: return Color(hex: 0xEFF6FF)   // Water
         }
     }
     private func aspectStyle(_ type: String) -> (color: Color, dash: [CGFloat]) {
         switch type {
-        case "conjunction": return (Color(hex: 0x8B5CF6), [])
-        case "sextile":     return (Color(hex: 0x22C55E), [4, 3])
-        case "trine":       return (Color(hex: 0x3B82F6), [6, 3])
-        case "square":      return (Color(hex: 0xEF4444), [])
-        case "opposition":  return (Color(hex: 0xF97316), [])
+        case "conjunction": return (Color(hex: 0xB794F6), [])
+        case "sextile":     return (Color(hex: 0x4ADE80), [4, 3])
+        case "trine":       return (Color(hex: 0x60A5FA), [6, 3])
+        case "square":      return (Color(hex: 0xF87171), [])
+        case "opposition":  return (Color(hex: 0xFB923C), [])
         default:            return (Color(hex: 0x9CA3AF), [2, 2])
         }
     }
+
+    // 테마별 선/글자색
+    private var ringStrong: Color { onDark ? .white.opacity(0.22) : Color(hex: 0xD9CDB5) }
+    private var ringSoft: Color   { onDark ? .white.opacity(0.12) : Color(hex: 0xE8DCC4) }
+    private var glyphColor: Color { onDark ? Color(hex: 0xF0E6D2) : Color(hex: 0x6B7280) }
+    private var houseLine: Color  { onDark ? .white.opacity(0.10) : Color(hex: 0xE5E0D2) }
+    private var houseAngular: Color { onDark ? .white.opacity(0.34) : Color(hex: 0x9CA3AF) }
+    private var houseNum: Color   { onDark ? .white.opacity(0.45) : DT.inkSoft }
+    private var planetInk: Color  { onDark ? Color(hex: 0xFBF7EF) : DT.ink }
+    private var connColor: Color  { onDark ? .white.opacity(0.16) : Color(hex: 0xCBB994) }
 
     var body: some View {
         Canvas { ctx, size in draw(ctx, side: size.width) }
@@ -68,12 +88,12 @@ struct NatalWheelChart: View {
             p.closeSubpath()
             ctx.fill(p, with: .color(signFill(i)))
             let mid = (aStart + aEnd) / 2
-            ctx.draw(Text(signGlyphs[i]).font(.system(size: side * 0.045)).foregroundColor(Color(hex: 0x6B7280)),
+            ctx.draw(Text(signGlyphs[i]).font(.system(size: side * 0.045)).foregroundColor(glyphColor),
                      at: pt(mid, (rOuter + rSignIn) / 2))
         }
-        ctx.stroke(ring(rOuter), with: .color(Color(hex: 0xD9CDB5)), lineWidth: 1)
-        ctx.stroke(ring(rSignIn), with: .color(Color(hex: 0xE8DCC4)), lineWidth: 1)
-        ctx.stroke(ring(rInner), with: .color(Color(hex: 0xE8DCC4)), lineWidth: 0.8)
+        ctx.stroke(ring(rOuter), with: .color(ringStrong), lineWidth: 1)
+        ctx.stroke(ring(rSignIn), with: .color(ringSoft), lineWidth: 1)
+        ctx.stroke(ring(rInner), with: .color(ringSoft), lineWidth: 0.8)
 
         // 하우스 라인 + 번호
         let houses = chart.houses
@@ -81,12 +101,12 @@ struct NatalWheelChart: View {
             let a = lonToAngle(h.cuspLongitude)
             let angular = [1, 4, 7, 10].contains(h.number)
             var line = Path(); line.move(to: pt(a, rInner)); line.addLine(to: pt(a, rSignIn))
-            ctx.stroke(line, with: .color(angular ? Color(hex: 0x9CA3AF) : Color(hex: 0xE5E0D2)),
+            ctx.stroke(line, with: .color(angular ? houseAngular : houseLine),
                        lineWidth: angular ? 1.1 : 0.5)
             let next = houses[(idx + 1) % houses.count]
             var midLon = (h.cuspLongitude + next.cuspLongitude) / 2
             if abs(next.cuspLongitude - h.cuspLongitude) > 180 { midLon += 180 }
-            ctx.draw(Text("\(h.number)").font(.system(size: side * 0.032)).foregroundColor(DT.inkSoft),
+            ctx.draw(Text("\(h.number)").font(.system(size: side * 0.032)).foregroundColor(houseNum),
                      at: pt(lonToAngle(midLon), rHouseLbl))
         }
 
@@ -96,14 +116,16 @@ struct NatalWheelChart: View {
             guard let l1 = byId[a.planet1], let l2 = byId[a.planet2] else { continue }
             let st = aspectStyle(a.type)
             var line = Path(); line.move(to: pt(lonToAngle(l1), rInner)); line.addLine(to: pt(lonToAngle(l2), rInner))
-            ctx.stroke(line, with: .color(st.color.opacity(0.45)),
+            ctx.stroke(line, with: .color(st.color.opacity(onDark ? 0.55 : 0.45)),
                        style: StrokeStyle(lineWidth: 0.8, dash: st.dash))
         }
 
         // ASC / MC 축
         if let ang = chart.angles {
-            for (lon, label, w, col) in [(ang.asc.longitude, "ASC", 1.8, Color(hex: 0x374151)),
-                                         (ang.mc.longitude, "MC", 1.0, Color(hex: 0x6B7280))] {
+            let ascCol = onDark ? Color(hex: 0xE8C77A) : Color(hex: 0x374151)
+            let mcCol  = onDark ? .white.opacity(0.7) : Color(hex: 0x6B7280)
+            for (lon, label, w, col) in [(ang.asc.longitude, "ASC", 1.8, ascCol),
+                                         (ang.mc.longitude, "MC", 1.0, mcCol)] {
                 let a = lonToAngle(lon)
                 var line = Path(); line.move(to: pt(a, 0)); line.addLine(to: pt(a, rOuter))
                 ctx.stroke(line, with: .color(col), lineWidth: w)
@@ -122,8 +144,8 @@ struct NatalWheelChart: View {
         for it in items {
             let base = pt(it.deg, rSignIn - R * 0.02), glyphPt = pt(it.deg, rPlanet)
             var conn = Path(); conn.move(to: base); conn.addLine(to: pt(it.deg, rPlanet + R * 0.05))
-            ctx.stroke(conn, with: .color(Color(hex: 0xCBB994)), lineWidth: 0.5)
-            ctx.draw(Text(planetGlyph[it.id] ?? "•").font(.system(size: side * 0.05)).foregroundColor(DT.ink),
+            ctx.stroke(conn, with: .color(connColor), lineWidth: 0.5)
+            ctx.draw(Text(planetGlyph[it.id] ?? "•").font(.system(size: side * 0.05)).foregroundColor(planetInk),
                      at: glyphPt)
             if it.retro {
                 ctx.draw(Text("R").font(.system(size: side * 0.025, weight: .bold)).foregroundColor(DT.accent),

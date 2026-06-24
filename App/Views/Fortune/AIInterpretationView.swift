@@ -139,7 +139,7 @@ struct FormattedAIText: View {
         var result: [Block] = []
         let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
         for raw in normalized.components(separatedBy: "\n") {
-            let line = raw.trimmingCharacters(in: .whitespaces)
+            let line = deAI(raw).trimmingCharacters(in: .whitespaces)
             if line.isEmpty { continue }
 
             // 구분선
@@ -192,6 +192,29 @@ struct FormattedAIText: View {
         s.replacingOccurrences(of: "**", with: "")
             .replacingOccurrences(of: "`", with: "")
             .replacingOccurrences(of: "*", with: "")
+    }
+
+    /// AI 특유 표현 제거 — 이모지/픽토그램/변형 셀렉터 삭제 + 공백 정리 (본문 의미는 보존)
+    private func deAI(_ s: String) -> String {
+        var out = ""
+        out.reserveCapacity(s.count)
+        for ch in s where !ch.unicodeScalars.contains(where: Self.isEmojiScalar) {
+            out.append(ch)
+        }
+        // 이모지 제거로 생긴 연속 공백 정리
+        while out.contains("  ") { out = out.replacingOccurrences(of: "  ", with: " ") }
+        return out
+    }
+
+    private static func isEmojiScalar(_ sc: Unicode.Scalar) -> Bool {
+        let v = sc.value
+        return (0x1F000...0x1FAFF).contains(v)   // 이모지 본체(감정·사물·동물 등)
+            || (0x2600...0x27BF).contains(v)     // 기타 기호 + 딩벳(✨☀️✔️➡️ 등)
+            || (0x2B00...0x2BFF).contains(v)     // 별표/화살표(⭐⬅️ 등)
+            || (0x1F1E6...0x1F1FF).contains(v)   // 지역(국기)
+            || (0x20D0...0x20FF).contains(v)     // 결합 기호(키캡 등)
+            || v == 0xFE0F || v == 0xFE0E        // 변형 셀렉터(이모지/텍스트)
+            || v == 0x200D                       // ZWJ(이모지 결합)
     }
 
     @ViewBuilder

@@ -49,7 +49,7 @@ struct AIContentPanel: View {
                         LazyVGrid(columns: cols, spacing: 8) {
                             ForEach(section.items) { item in
                                 Button {
-                                    sheetTitle = "\(item.emoji) \(item.label)"
+                                    sheetTitle = item.label
                                     showSheet = true
                                     run(item.id)
                                 } label: {

@@ -5,7 +5,6 @@ import SwiftUI
 
 struct AIContentItem: Identifiable {
     let id: String
-    let emoji: String
     let label: String
 }
 struct AIContentSectionData: Identifiable {
@@ -53,15 +52,15 @@ struct AIContentPanel: View {
                                     showSheet = true
                                     run(item.id)
                                 } label: {
-                                    HStack(spacing: 4) {
-                                        Text(item.emoji).font(.system(size: 13))
-                                        Text(item.label).font(DT.sans(11, .medium)).lineLimit(1).minimumScaleFactor(0.7)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 9).padding(.horizontal, 6)
-                                    .background(activeId == item.id ? DT.accent : DT.bg)
-                                    .foregroundStyle(activeId == item.id ? .white : DT.ink)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    Text(item.label)
+                                        .font(DT.sans(11, .medium)).lineLimit(1).minimumScaleFactor(0.7)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10).padding(.horizontal, 8)
+                                        .background(activeId == item.id ? DT.accent : DT.bg)
+                                        .foregroundStyle(activeId == item.id ? .white : DT.ink)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .overlay(RoundedRectangle(cornerRadius: 10)
+                                            .stroke(DT.line, lineWidth: activeId == item.id ? 0 : 0.8))
                                 }
                                 .buttonStyle(.plain)
                             }

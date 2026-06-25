@@ -145,10 +145,9 @@ struct SajuDetailView: View {
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.vertical, 12)
             } else {
-                Text("사주를 계산할 수 없어요")
-                    .font(DT.sans(14))
-                    .foregroundStyle(DT.inkSoft)
-                    .padding(.top, 60)
+                ContentUnavailableView("사주를 계산할 수 없어요", systemImage: "sparkles",
+                                       description: Text("생년월일 정보를 확인해 주세요."))
+                    .padding(.top, 40)
             }
         }
         .background(DT.bg)

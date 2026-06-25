@@ -39,12 +39,12 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Spacer()
-                Text("운세를 계산할 수 없어요\n\(appState.lastError ?? "")")
-                    .font(DT.sans(14))
-                    .foregroundStyle(DT.inkSoft)
-                    .multilineTextAlignment(.center)
-                Spacer()
+                ContentUnavailableView {
+                    Label("운세를 불러올 수 없어요", systemImage: "moon.zzz")
+                } description: {
+                    Text(appState.lastError?.isEmpty == false ? appState.lastError! : "잠시 후 다시 시도해 주세요.")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -248,6 +248,7 @@ struct HomeView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: heroHeight)
             .padding(.horizontal, -7)   // 페이지 여백만큼 TabView를 넓혀 카드 본체 폭 유지
+            .sensoryFeedback(.selection, trigger: selection.wrappedValue)
 
             weekDots(count: bundle.fortunes.count, todayIndex: todayIndex, selected: selection.wrappedValue)
         }

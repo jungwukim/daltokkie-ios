@@ -75,6 +75,7 @@ struct AIContentPanel: View {
                           onClose: { showSheet = false },
                           onRetry: { if let id = activeId { run(id) } })
         }
+        .sensoryFeedback(.selection, trigger: showSheet)
         .onDisappear { task?.cancel() }
     }
 

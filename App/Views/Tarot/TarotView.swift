@@ -71,7 +71,7 @@ struct TarotView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
                         ForEach(TarotData.topics, id: \.value) { t in
                             Button { topic = t.value } label: {
-                                Text("\(t.emoji) \(t.label)").font(DT.sans(12, .medium))
+                                Text(t.label).font(DT.sans(12, .medium))
                                     .frame(maxWidth: .infinity).padding(.vertical, 9)
                                     .background(topic == t.value ? DT.accent : DT.bg)
                                     .foregroundStyle(topic == t.value ? .white : DT.ink)
@@ -93,7 +93,7 @@ struct TarotView: View {
             }
 
             Button { draw() } label: {
-                Text("🃏 카드 뽑기").font(DT.sans(15, .bold)).foregroundStyle(.white)
+                Text("카드 뽑기").font(DT.sans(15, .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
                     .background(DT.accent).clipShape(RoundedRectangle(cornerRadius: 12))
             }
@@ -140,7 +140,7 @@ struct TarotReadingView: View {
             VStack(spacing: 16) {
                 CraftCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(TarotData.topics.first { $0.value == session.topic }.map { "\($0.emoji) \($0.label)" } ?? "")
+                        Text(TarotData.topics.first { $0.value == session.topic }.map { $0.label } ?? "")
                             .font(DT.sans(12, .semibold)).foregroundStyle(DT.accent)
                         if !session.question.trimmingCharacters(in: .whitespaces).isEmpty {
                             Text("Q. \(session.question)").font(DT.sans(12)).foregroundStyle(DT.inkSoft)
@@ -177,6 +177,7 @@ struct TarotReadingView: View {
         .background(DT.bg)
         .navigationTitle("\(session.spread.label) 리딩")
         .navigationBarTitleDisplayMode(.inline)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: flipped)
     }
 
     private func cardCell(_ d: TarotDrawn) -> some View {

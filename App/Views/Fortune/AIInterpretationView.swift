@@ -33,6 +33,7 @@ struct AIInterpretationView: View {
             AIResultSheet(title: title, text: text, isLoading: isLoading, errorText: errorText,
                           onClose: { showSheet = false }, onRetry: { run() })
         }
+        .sensoryFeedback(.selection, trigger: showSheet)
         .onDisappear { task?.cancel() }
     }
 
@@ -72,21 +73,17 @@ struct AIResultSheet: View {
             ScrollView {
                 Group {
                     if errorText != nil {
-                        VStack(spacing: 12) {
-                            Text("해석을 불러오지 못했어요\n네트워크 연결을 확인해 주세요.")
-                                .font(DT.sans(13)).foregroundStyle(DT.inkSoft)
-                                .multilineTextAlignment(.center)
-                            Button(action: onRetry) {
-                                Text("다시 시도").font(DT.sans(13, .semibold)).foregroundStyle(DT.accent)
-                            }
+                        ContentUnavailableView {
+                            Label("해석을 불러오지 못했어요", systemImage: "moon.zzz")
+                        } description: {
+                            Text("네트워크 연결을 확인하고 다시 시도해 주세요.")
+                        } actions: {
+                            Button("다시 시도", action: onRetry)
+                                .font(DT.sans(14, .semibold)).foregroundStyle(DT.accent)
                         }
-                        .frame(maxWidth: .infinity).padding(.top, 48)
+                        .padding(.top, 32)
                     } else if text.isEmpty && isLoading {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small)
-                            Text("달토끼가 해석 중이에요…").font(DT.sans(13)).foregroundStyle(DT.inkSoft)
-                        }
-                        .frame(maxWidth: .infinity).padding(.top, 48)
+                        AISkeleton()
                     } else {
                         FormattedAIText(text: text)
                     }
@@ -106,6 +103,33 @@ struct AIResultSheet: View {
         }
         .presentationDragIndicator(.visible)
         .presentationDetents([.large, .medium])
+    }
+}
+
+/// AI 생성 대기용 스켈레톤 — redacted + 은은한 쉬머 (체감 완성도 ↑)
+struct AISkeleton: View {
+    @State private var shimmer = false
+    private let lines: [CGFloat] = [0.55, 0.92, 0.78, 0.96, 0.7, 0.88, 0.5]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RoundedRectangle(cornerRadius: 6).frame(width: 130, height: 16)   // 제목
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(lines.indices, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(width: nil, height: 12)
+                        .scaleEffect(x: lines[i], anchor: .leading)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .foregroundStyle(DT.inkSoft.opacity(0.18))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(shimmer ? 0.55 : 1)
+        .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: shimmer)
+        .onAppear { shimmer = true }
+        .accessibilityLabel("해석을 생성하고 있어요")
     }
 }
 

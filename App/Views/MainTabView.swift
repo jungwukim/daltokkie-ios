@@ -48,6 +48,7 @@ struct MainTabView: View {
                 .tag(AppState.Tab.my)
         }
         .tint(DT.accent)
+        .sensoryFeedback(.selection, trigger: appState.selectedTab)
         // 중앙 달토끼 돌출 배지 (라벨 없음, 다른 탭보다 큼) — 탭바 위 중앙에 겹쳐 표시
         .overlay(alignment: .bottom) {
             CenterBadge()

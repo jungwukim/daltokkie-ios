@@ -132,10 +132,9 @@ struct NatalDetailView: View {
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.vertical, 12)
             } else {
-                Text("차트를 계산할 수 없어요")
-                    .font(DT.sans(14))
-                    .foregroundStyle(DT.inkSoft)
-                    .padding(.top, 60)
+                ContentUnavailableView("출생 차트를 계산할 수 없어요", systemImage: "moon.stars",
+                                       description: Text("생년월일시 정보를 확인해 주세요."))
+                    .padding(.top, 40)
             }
         }
         .background(DT.bg)
@@ -454,10 +453,9 @@ struct ZiweiDetailView: View {
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.vertical, 12)
             } else {
-                Text("명반을 계산할 수 없어요")
-                    .font(DT.sans(14))
-                    .foregroundStyle(DT.inkSoft)
-                    .padding(.top, 60)
+                ContentUnavailableView("명반을 계산할 수 없어요", systemImage: "sparkles",
+                                       description: Text("생년월일시 정보를 확인해 주세요."))
+                    .padding(.top, 40)
             }
         }
         .background(DT.bg)

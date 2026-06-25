@@ -59,9 +59,9 @@ enum TarotSpread: String, CaseIterable {
 }
 
 enum TarotData {
-    static let topics: [(value: String, label: String, emoji: String)] = [
-        ("general", "전체운", "🌟"), ("love", "연애", "💕"), ("career", "직장", "💼"),
-        ("money", "재물", "💰"), ("study", "학업", "📚"), ("health", "건강", "💪"),
+    static let topics: [(value: String, label: String)] = [
+        ("general", "전체운"), ("love", "연애"), ("career", "직장"),
+        ("money", "재물"), ("study", "학업"), ("health", "건강"),
     ]
 
     static let major: [TarotCardData] = [

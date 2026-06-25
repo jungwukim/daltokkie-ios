@@ -149,7 +149,11 @@ struct TarotReadingView: View {
                             Text("카드를 탭하여 뒤집어 보세요").font(DT.sans(11)).foregroundStyle(DT.inkSoft)
                         }
                         LazyVGrid(columns: cardCols, spacing: 12) {
-                            ForEach(session.cards) { d in cardCell(d) }
+                            ForEach(session.cards) { d in
+                                TarotCardView(drawn: d, revealed: flipped.contains(d.id)) {
+                                    _ = flipped.insert(d.id)
+                                }
+                            }
                         }
                         if flipped.count < session.cards.count {
                             Button { withAnimation { flipped = Set(session.cards.map { $0.id }) } } label: {
@@ -198,23 +202,46 @@ struct TarotReadingView: View {
         return "[타로 · \(session.spread.label) · \(topic)]\n\n\(body)\n\n— 달토끼"
     }
 
-    private func cardCell(_ d: TarotDrawn) -> some View {
-        let isFlipped = flipped.contains(d.id)
-        return VStack(spacing: 4) {
-            Text(d.position).font(DT.sans(9, .semibold)).foregroundStyle(DT.inkSoft).lineLimit(1)
-            Image(isFlipped ? d.card.asset : "tarot-back")
-                .resizable().scaledToFit().frame(height: 120)
-                .rotationEffect(.degrees(isFlipped && d.isReversed ? 180 : 0))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .onTapGesture { withAnimation(.spring(duration: 0.4)) { _ = flipped.insert(d.id) } }
-            if isFlipped {
-                Text(d.card.nameKo + (d.isReversed ? " (역)" : ""))
-                    .font(DT.sans(10, .semibold)).foregroundStyle(d.isReversed ? Color(hex: 0xD45555) : DT.ink)
+}
+
+/// 타로 카드 — Y축 3D 플립 (탭/전부 뒤집기 모두 대응, 중간 90°에서 앞↔뒤 전환)
+struct TarotCardView: View {
+    let drawn: TarotDrawn
+    let revealed: Bool
+    let onTap: () -> Void
+
+    @State private var angle: Double = 0
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(drawn.position).font(DT.sans(9, .semibold)).foregroundStyle(DT.inkSoft).lineLimit(1)
+            ZStack {
+                Image("tarot-back")
+                    .resizable().scaledToFit().frame(height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .opacity(angle < 90 ? 1 : 0)
+                Image(drawn.card.asset)
+                    .resizable().scaledToFit().frame(height: 120)
+                    .rotationEffect(.degrees(drawn.isReversed ? 180 : 0))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))   // 앞면 거울상 보정
+                    .opacity(angle < 90 ? 0 : 1)
+            }
+            .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
+            if revealed {
+                Text(drawn.card.nameKo + (drawn.isReversed ? " (역)" : ""))
+                    .font(DT.sans(10, .semibold)).foregroundStyle(drawn.isReversed ? Color(hex: 0xD45555) : DT.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                Text((d.isReversed ? d.card.keywordsReversed : d.card.keywords).joined(separator: "·"))
+                Text((drawn.isReversed ? drawn.card.keywordsReversed : drawn.card.keywords).joined(separator: "·"))
                     .font(DT.sans(8)).foregroundStyle(DT.inkSoft).multilineTextAlignment(.center)
                     .lineLimit(2).minimumScaleFactor(0.7)
             }
+        }
+        .onAppear { angle = revealed ? 180 : 0 }
+        .onChange(of: revealed) { _, now in
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) { angle = now ? 180 : 0 }
         }
     }
 }

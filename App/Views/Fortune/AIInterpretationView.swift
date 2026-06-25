@@ -51,6 +51,7 @@ struct AIInterpretationView: View {
                     Label(text.isEmpty ? "달토끼 해석 받기" : "해석 다시 보기", systemImage: "moon.stars.fill")
                         .font(DT.sans(14, .bold))
                         .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: showSheet)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(DT.night)

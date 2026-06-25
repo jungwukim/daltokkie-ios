@@ -112,6 +112,26 @@ struct CompatibilityView: View {
         .background(DT.bg)
         .navigationTitle("궁합")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if let s = shareText {
+                    ShareLink(item: s) {
+                        Image(systemName: "square.and.arrow.up").foregroundStyle(DT.ink)
+                    }
+                }
+            }
+        }
+    }
+
+    private var shareText: String? {
+        guard let me = appState.ensureSaju(), let partner else { return nil }
+        let o = compute(me, partner)
+        var parts = ["[궁합] \(animalKo(me.animal))띠 × \(animalKo(partner.animal))띠",
+                     "\(o.score)점 — \(o.summary)"]
+        if !o.strengths.isEmpty { parts.append("\n강점\n" + o.strengths.map { "· \($0)" }.joined(separator: "\n")) }
+        if !o.advice.isEmpty { parts.append("\n조언\n" + o.advice.map { "· \($0)" }.joined(separator: "\n")) }
+        parts.append("\n— 달토끼")
+        return parts.joined(separator: "\n")
     }
 
     private func bulletCard(_ title: String, _ items: [String], _ color: Color) -> some View {

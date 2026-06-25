@@ -178,6 +178,24 @@ struct TarotReadingView: View {
         .navigationTitle("\(session.spread.label) 리딩")
         .navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: flipped)
+        .toolbar {
+            if flipped.count == session.cards.count {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: shareText) {
+                        Image(systemName: "square.and.arrow.up").foregroundStyle(DT.ink)
+                    }
+                }
+            }
+        }
+    }
+
+    private var shareText: String {
+        let topic = TarotData.topics.first { $0.value == session.topic }?.label ?? ""
+        let body = session.cards.map { d in
+            let kw = (d.isReversed ? d.card.keywordsReversed : d.card.keywords).joined(separator: ", ")
+            return "\(d.position): \(d.card.nameKo)\(d.isReversed ? " (역방향)" : "") — \(kw)"
+        }.joined(separator: "\n")
+        return "[타로 · \(session.spread.label) · \(topic)]\n\n\(body)\n\n— 달토끼"
     }
 
     private func cardCell(_ d: TarotDrawn) -> some View {

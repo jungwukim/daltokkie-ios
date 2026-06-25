@@ -2,6 +2,35 @@
 
 import SwiftUI
 
+/// 이모지/픽토그램/변형 셀렉터 판별 (공유·렌더 공용)
+func aiIsEmojiScalar(_ sc: Unicode.Scalar) -> Bool {
+    let v = sc.value
+    return (0x1F000...0x1FAFF).contains(v)
+        || (0x2600...0x27BF).contains(v)
+        || (0x2B00...0x2BFF).contains(v)
+        || (0x1F1E6...0x1F1FF).contains(v)
+        || (0x20D0...0x20FF).contains(v)
+        || v == 0xFE0F || v == 0xFE0E || v == 0x200D
+}
+
+/// AI 마크다운 → 공유용 평문 (이모지·마커 제거, 줄바꿈 유지)
+func aiPlainText(_ s: String) -> String {
+    s.replacingOccurrences(of: "\r\n", with: "\n")
+        .components(separatedBy: "\n")
+        .map { raw -> String in
+            var line = String(String.UnicodeScalarView(raw.unicodeScalars.filter { !aiIsEmojiScalar($0) }))
+                .trimmingCharacters(in: .whitespaces)
+            line = line.replacingOccurrences(of: #"^#{1,6}\s*"#, with: "", options: .regularExpression)
+            line = line.replacingOccurrences(of: #"^>\s*"#, with: "", options: .regularExpression)
+            line = line.replacingOccurrences(of: "**", with: "")
+                .replacingOccurrences(of: "`", with: "")
+                .replacingOccurrences(of: "*", with: "")
+            while line.contains("  ") { line = line.replacingOccurrences(of: "  ", with: " ") }
+            return line
+        }
+        .joined(separator: "\n")
+}
+
 struct AIInterpretationView: View {
     let title: String
     let start: () -> AsyncThrowingStream<String, Error>
@@ -98,6 +127,12 @@ struct AIResultSheet: View {
                 ToolbarItem(placement: .topBarTrailing) { CircleCloseButton(action: onClose) }
                 if isLoading {
                     ToolbarItem(placement: .topBarLeading) { ProgressView().controlSize(.small) }
+                } else if !text.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        ShareLink(item: "[\(title)]\n\n\(aiPlainText(text))\n\n— 달토끼") {
+                            Image(systemName: "square.and.arrow.up").foregroundStyle(DT.ink)
+                        }
+                    }
                 }
             }
         }
@@ -230,16 +265,7 @@ struct FormattedAIText: View {
         return out
     }
 
-    private static func isEmojiScalar(_ sc: Unicode.Scalar) -> Bool {
-        let v = sc.value
-        return (0x1F000...0x1FAFF).contains(v)   // 이모지 본체(감정·사물·동물 등)
-            || (0x2600...0x27BF).contains(v)     // 기타 기호 + 딩벳(✨☀️✔️➡️ 등)
-            || (0x2B00...0x2BFF).contains(v)     // 별표/화살표(⭐⬅️ 등)
-            || (0x1F1E6...0x1F1FF).contains(v)   // 지역(국기)
-            || (0x20D0...0x20FF).contains(v)     // 결합 기호(키캡 등)
-            || v == 0xFE0F || v == 0xFE0E        // 변형 셀렉터(이모지/텍스트)
-            || v == 0x200D                       // ZWJ(이모지 결합)
-    }
+    private static func isEmojiScalar(_ sc: Unicode.Scalar) -> Bool { aiIsEmojiScalar(sc) }
 
     @ViewBuilder
     private func bodyText(_ s: String, color: Color) -> some View {

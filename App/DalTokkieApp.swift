@@ -14,7 +14,6 @@ struct DalTokkieApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
-                .preferredColorScheme(.light)
         }
     }
 }

@@ -2,18 +2,29 @@
 
 import SwiftUI
 import CoreText
+import UIKit
+
+/// 라이트/다크 동적 색 — 크래프트지(주간) ↔ 나이트(야간) 팔레트
+func dtDyn(_ light: UInt32, _ dark: UInt32) -> Color {
+    Color(uiColor: UIColor { tc in
+        let h = tc.userInterfaceStyle == .dark ? dark : light
+        return UIColor(red: CGFloat((h >> 16) & 0xFF) / 255,
+                       green: CGFloat((h >> 8) & 0xFF) / 255,
+                       blue: CGFloat(h & 0xFF) / 255, alpha: 1)
+    })
+}
 
 enum DT {
-    // 색상 팔레트
-    static let bg = Color(hex: 0xF8F2E8)          // 크래프트지 배경
-    static let card = Color(hex: 0xFAF6EE)        // 카드 크림
-    static let accent = Color(hex: 0xD4789C)      // 포인트 핑크
-    static let accentSoft = Color(hex: 0xF0DDE4)  // 버튼 연핑크
-    static let ink = Color(hex: 0x2A2520)         // 본문 잉크
-    static let inkSoft = Color(hex: 0x8B7E6A)     // 보조 텍스트
-    static let line = Color(hex: 0xE8DCC4)        // 보더
-    static let night = Color(hex: 0x2A2F50)       // 밤하늘 (CTA/탭 로고 배경)
-    static let strokeBrown = Color(hex: 0x8B7355) // SVG 선 톤
+    // 색상 팔레트 (라이트=크래프트지 / 다크=나이트)
+    static let bg = dtDyn(0xF8F2E8, 0x15171E)          // 배경
+    static let card = dtDyn(0xFAF6EE, 0x20222D)        // 카드
+    static let accent = dtDyn(0xD4789C, 0xE08CAC)      // 포인트 핑크
+    static let accentSoft = dtDyn(0xF0DDE4, 0x3A2B33)  // 버튼 연핑크
+    static let ink = dtDyn(0x2A2520, 0xF1EBE1)         // 본문 잉크
+    static let inkSoft = dtDyn(0x8B7E6A, 0xA99C88)     // 보조 텍스트
+    static let line = dtDyn(0xE8DCC4, 0x33363F)        // 보더
+    static let night = dtDyn(0x2A2F50, 0x3A4170)       // 밤하늘 (CTA/탭 로고 배경)
+    static let strokeBrown = dtDyn(0x8B7355, 0xA89070) // SVG 선 톤
 
     // 코너/간격
     static let radius: CGFloat = 16

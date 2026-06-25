@@ -40,11 +40,12 @@ enum DT {
         default:                    return "Pretendard-Regular"
         }
     }
+    // relativeTo: .body — 사용자 Dynamic Type 설정에 맞춰 스케일(루트에서 상한 클램프)
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .custom(pretendard(weight), size: size)
+        .custom(pretendard(weight), size: size, relativeTo: .body)
     }
     static func sans(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .custom(pretendard(weight), size: size)
+        .custom(pretendard(weight), size: size, relativeTo: .body)
     }
 }
 

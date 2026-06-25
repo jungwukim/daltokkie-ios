@@ -65,6 +65,8 @@ struct ZiweiGridChart: View {
             }
         }
         .frame(height: cellH * 4)
+        .accessibilityElement()
+        .accessibilityLabel("자미두수 명반 — 12궁 성요 배치도")
     }
 
     @ViewBuilder

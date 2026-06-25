@@ -4,9 +4,18 @@
 
 import SwiftUI
 import SajuKit
+import TipKit
+
+/// 주간 페이저 코치마크 (첫 진입 1회)
+struct WeeklyPagerTip: Tip {
+    var title: Text { Text("요일별 운세") }
+    var message: Text? { Text("좌우로 넘기면 이번 주 다른 날의 운세를 볼 수 있어요") }
+    var image: Image? { Image(systemName: "hand.draw") }
+}
 
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
+    private let weeklyTip = WeeklyPagerTip()
     @State private var showYongsinInfo = false
     @State private var showLuckyDetail = false
     @State private var showCtaBanner = true   // 세션 한정 — X로 닫으면 앱 재실행 전까지 숨김
@@ -252,6 +261,7 @@ struct HomeView: View {
             .sensoryFeedback(.selection, trigger: selection.wrappedValue)
 
             weekDots(count: bundle.fortunes.count, todayIndex: todayIndex, selected: selection.wrappedValue)
+                .popoverTip(weeklyTip)
         }
     }
 

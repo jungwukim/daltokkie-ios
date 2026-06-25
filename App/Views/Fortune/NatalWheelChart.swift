@@ -57,6 +57,8 @@ struct NatalWheelChart: View {
     var body: some View {
         Canvas { ctx, size in draw(ctx, side: size.width) }
             .aspectRatio(1, contentMode: .fit)
+            .accessibilityElement()
+            .accessibilityLabel("출생 천궁도 — 행성·하우스·어스펙트 원형 차트")
     }
 
     private func draw(_ ctx: GraphicsContext, side: CGFloat) {

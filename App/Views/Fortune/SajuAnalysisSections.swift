@@ -14,27 +14,27 @@ struct SajuAnalysisSections: View {
     private static let elementKo = ["Wood": "목", "Fire": "화", "Earth": "토", "Metal": "금", "Water": "수"]
     private func elColor(_ e: String) -> Color {
         switch e {
-        case "Wood", "목": return Color(hex: 0x4E9A51)
-        case "Fire", "화": return Color(hex: 0xD1495B)
-        case "Earth", "토": return Color(hex: 0xC79A3B)
-        case "Metal", "금": return Color(hex: 0x9AA0A6)
-        case "Water", "수": return Color(hex: 0x3F6CB0)
+        case "Wood", "목": return dtDyn(0x4E9A51, 0x6FBF73)
+        case "Fire", "화": return dtDyn(0xD1495B, 0xE5757F)
+        case "Earth", "토": return dtDyn(0xC79A3B, 0xDDBA62)
+        case "Metal", "금": return dtDyn(0x9AA0A6, 0xBCC1C7)
+        case "Water", "수": return dtDyn(0x3F6CB0, 0x6E97D2)
         default: return DT.inkSoft
         }
     }
     private func relColor(_ type: String) -> Color {
-        if type.contains("합") { return Color(hex: 0x059669) }
-        if type.contains("충") { return Color(hex: 0xDC2626) }
-        if type.contains("형") { return Color(hex: 0xEA580C) }
-        if type.contains("파") { return Color(hex: 0x7C3AED) }
-        if type.contains("해") { return Color(hex: 0xE11D48) }
-        return Color(hex: 0x64748B)
+        if type.contains("합") { return dtDyn(0x059669, 0x34BD8E) }
+        if type.contains("충") { return dtDyn(0xDC2626, 0xF06A6A) }
+        if type.contains("형") { return dtDyn(0xEA580C, 0xF0884C) }
+        if type.contains("파") { return dtDyn(0x7C3AED, 0xA77CF0) }
+        if type.contains("해") { return dtDyn(0xE11D48, 0xF06080) }
+        return dtDyn(0x64748B, 0x93A0B2)
     }
     private func salColor(_ type: String) -> Color {
         switch type {
-        case "길신": return Color(hex: 0x059669)
-        case "흉살": return Color(hex: 0xDC2626)
-        default: return Color(hex: 0x8B7E6A)
+        case "길신": return dtDyn(0x059669, 0x34BD8E)
+        case "흉살": return dtDyn(0xDC2626, 0xF06A6A)
+        default: return dtDyn(0x8B7E6A, 0xA99C88)
         }
     }
 
@@ -123,10 +123,10 @@ struct SajuAnalysisSections: View {
         var comp = DateComponents(); comp.year = year; comp.month = month; comp.day = 1
         let lead = (Calendar.current.dateComponents([.weekday], from: Calendar.current.date(from: comp) ?? now).weekday ?? 1) - 1
         func scoreColor(_ s: Int) -> Color {
-            if s >= 70 { return Color(hex: 0x5A9E6F) }
-            if s >= 50 { return Color(hex: 0xE0B450) }
+            if s >= 70 { return dtDyn(0x5A9E6F, 0x7FC093) }
+            if s >= 50 { return dtDyn(0xE0B450, 0xEBC873) }
             if s >= 35 { return DT.accent }
-            return Color(hex: 0xB0A088)
+            return dtDyn(0xB0A088, 0x8E826E)
         }
         return CraftCard {
             VStack(alignment: .leading, spacing: 10) {

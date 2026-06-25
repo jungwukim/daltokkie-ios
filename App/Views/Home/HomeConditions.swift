@@ -24,11 +24,11 @@ enum HomeConditions {
                                  grade: c?.grade ?? "", desc: c?.description ?? "")
         }
         return [
-            make("재물", "재물운", "item-01", Color(hex: 0x8DA9C4)),
-            make("연애", "연애운", "item-02", Color(hex: 0xE89BB0)),
-            make("인간관계", "대인운", "item-03", Color(hex: 0xE0B450)),
-            make("감정", "가정운", "item-04", Color(hex: 0xB39DC9)),
-            make("건강", "건강운", "item-05", Color(hex: 0x8FB996)),
+            make("재물", "재물운", "item-01", dtDyn(0x8DA9C4, 0xA6C0D8)),
+            make("연애", "연애운", "item-02", dtDyn(0xE89BB0, 0xF0B0C2)),
+            make("인간관계", "대인운", "item-03", dtDyn(0xE0B450, 0xEBC873)),
+            make("감정", "가정운", "item-04", dtDyn(0xB39DC9, 0xC8B5DA)),
+            make("건강", "건강운", "item-05", dtDyn(0x8FB996, 0xA9CDB0)),
         ]
     }
 

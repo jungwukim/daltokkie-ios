@@ -121,8 +121,8 @@ struct HomeView: View {
         }
         .padding(.horizontal, DT.pagePadding)
         .padding(.vertical, 14)
-        // 상단 바 흰색 — 상태바 영역(상단 세이프에어리어)까지 함께 채움
-        .background(Color.white, ignoresSafeAreaEdges: .top)
+        // 상단 바 — 라이트=흰색 / 다크=짙은 톤, 상태바 영역(상단 세이프에어리어)까지 함께 채움
+        .background(DT.topBar, ignoresSafeAreaEdges: .top)
     }
 
     // MARK: - 히어로 (오늘의 달빛 편지) — 토끼 우측 가득 + 코너 프레임

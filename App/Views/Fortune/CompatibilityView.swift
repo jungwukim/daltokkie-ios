@@ -101,9 +101,9 @@ struct CompatibilityView: View {
                     // 오행 보완 관계
                     bulletCard("오행 보완 관계", o.complements, DT.ink)
                     // 강점 / 약점 / 조언
-                    bulletCard("강점", o.strengths, Color(hex: 0x5A9E6F))
-                    bulletCard("약점", o.weaknesses, Color(hex: 0xD45555))
-                    bulletCard("조언", o.advice, Color(hex: 0x5A80B0))
+                    bulletCard("강점", o.strengths, dtDyn(0x5A9E6F, 0x7FC093))
+                    bulletCard("약점", o.weaknesses, dtDyn(0xD45555, 0xE57E7E))
+                    bulletCard("조언", o.advice, dtDyn(0x5A80B0, 0x82A6D2))
                 }
             }
             .padding(.horizontal, DT.pagePadding)
@@ -277,8 +277,8 @@ struct CompatibilityView: View {
     }
 
     private func scoreColor(_ s: Int) -> Color {
-        if s >= 80 { return Color(hex: 0x5A9E6F) }
-        if s >= 60 { return Color(hex: 0xE0B450) }
+        if s >= 80 { return dtDyn(0x5A9E6F, 0x7FC093) }
+        if s >= 60 { return dtDyn(0xE0B450, 0xEBC873) }
         return DT.accent
     }
 

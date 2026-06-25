@@ -25,6 +25,7 @@ enum DT {
     static let line = dtDyn(0xE8DCC4, 0x33363F)        // 보더
     static let night = dtDyn(0x2A2F50, 0x3A4170)       // 밤하늘 (CTA/탭 로고 배경)
     static let strokeBrown = dtDyn(0x8B7355, 0xA89070) // SVG 선 톤
+    static let topBar = dtDyn(0xFFFFFF, 0x1B1D26)      // 상단 바(헤더+상태바 영역)
 
     // 코너/간격
     static let radius: CGFloat = 16
@@ -63,11 +64,11 @@ enum DTFonts {
 /// 오행(목·화·토·금·수) 색 — 한국 전통 톤 + 다크/라이트 가독성 보정
 func sajuElementColor(_ element: String) -> Color {
     switch element {
-    case "Wood":  return Color(hex: 0x6FA876)   // 목 — 청록
-    case "Fire":  return Color(hex: 0xD9785E)   // 화 — 적
-    case "Earth": return Color(hex: 0xC9A24B)   // 토 — 황
-    case "Metal": return Color(hex: 0xAEB2BC)   // 금 — 은백
-    case "Water": return Color(hex: 0x5B8FB9)   // 수 — 청
+    case "Wood":  return dtDyn(0x6FA876, 0x86C49A)   // 목 — 청록
+    case "Fire":  return dtDyn(0xD9785E, 0xE89B82)   // 화 — 적
+    case "Earth": return dtDyn(0xC9A24B, 0xDDBE6E)   // 토 — 황
+    case "Metal": return dtDyn(0xAEB2BC, 0xC8CCD6)   // 금 — 은백
+    case "Water": return dtDyn(0x5B8FB9, 0x82B2D8)   // 수 — 청
     default:      return DT.inkSoft
     }
 }

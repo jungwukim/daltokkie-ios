@@ -29,12 +29,12 @@ struct ZiweiGridChart: View {
     // 밝기 색상
     private func brightnessColor(_ b: String) -> Color {
         switch b {
-        case "廟": return Color(hex: 0xD97706)
-        case "旺": return Color(hex: 0xEA580C)
-        case "得": return Color(hex: 0x0284C7)
-        case "利": return Color(hex: 0x0D9488)
-        case "陷": return Color(hex: 0xE11D48)
-        default:   return Color(hex: 0x8B8378)   // 平·기타
+        case "廟": return dtDyn(0xD97706, 0xECA13C)
+        case "旺": return dtDyn(0xEA580C, 0xF0884C)
+        case "得": return dtDyn(0x0284C7, 0x3FA9E0)
+        case "利": return dtDyn(0x0D9488, 0x3CC0B2)
+        case "陷": return dtDyn(0xE11D48, 0xF06080)
+        default:   return dtDyn(0x8B8378, 0xA89C8C)   // 平·기타
         }
     }
     // 사화 배지 색

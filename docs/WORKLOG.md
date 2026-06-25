@@ -32,6 +32,13 @@
 
 ## 작업 히스토리
 
+#### 43. 다크 모드 마감 — 의미색 분기 + 상단 바 (2026-06-26)
+- **요청**: 의미색까지 dtDyn 분기 + 상단 바(헤더+상태바)가 다크에서 흰색이라 안 어울림
+- **상단 바**: `DT.topBar = dtDyn(0xFFFFFF, 0x1B1D26)` 신설, `HomeView` 헤더 배경 `Color.white` → `DT.topBar`(상태바 세이프에어리어까지)
+- **의미색 dtDyn 분기**(라이트→다크 밝게 보정): `sajuElementColor`(오행5), `natalElementColor`(원소4), `aspectColor`(어스펙트5), 궁합 강점/약점/조언+scoreColor, `SajuAnalysisSections` elColor/relColor/salColor/scoreColor, `ZiweiGridChart` brightnessColor, HomeConditions 카테고리5
+- **유지**: 밤하늘 히어로 고정색, siHua 배지(자체 bg/fg), 공망 슬레이트 배지(흰 텍스트)
+- **검증**(iPhone 17 Pro/iOS 26.2): 다크 홈(상단 바 어두움)·점성 상세(원소색 밝게) 확인 ✅
+
 #### 42. UI/UX 2차 개선 묶음 (#1~#6) (2026-06-26)
 - **요청**: 남은 UI/UX 작업을 to-do로 정리하고 하나씩 체크하며 수행
 - **#1 카피 톤**: "이번 주 최고예요!" → "기운이 좋은 흐름"(과장 완화)

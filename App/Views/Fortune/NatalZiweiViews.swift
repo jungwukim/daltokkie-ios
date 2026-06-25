@@ -14,10 +14,10 @@ private let natalSignIndex: [String: Int] = [
 /// 원소색 (불=테라코타 / 흙=초록 / 바람=골드 / 물=블루) — 크래프트지 카드용 채도
 private func natalElementColor(_ sign: String) -> Color {
     switch (natalSignIndex[sign] ?? 0) % 4 {
-    case 0:  return Color(hex: 0xC2714E)   // Fire
-    case 1:  return Color(hex: 0x5E9A6E)   // Earth
-    case 2:  return Color(hex: 0xB58A2E)   // Air
-    default: return Color(hex: 0x4E7FA8)   // Water
+    case 0:  return dtDyn(0xC2714E, 0xD89472)   // Fire
+    case 1:  return dtDyn(0x5E9A6E, 0x83BE92)   // Earth
+    case 2:  return dtDyn(0xB58A2E, 0xD4AD55)   // Air
+    default: return dtDyn(0x4E7FA8, 0x77A8CE)   // Water
     }
 }
 private func natalElementKo(_ sign: String) -> String {
@@ -99,11 +99,11 @@ struct NatalDetailView: View {
     ]
     private func aspectColor(_ type: String) -> Color {
         switch type {
-        case "conjunction": return Color(hex: 0x8B5CF6)
-        case "sextile":     return Color(hex: 0x22A06B)
-        case "trine":       return Color(hex: 0x3B7FD4)
-        case "square":      return Color(hex: 0xD9534F)
-        case "opposition":  return Color(hex: 0xE07B2E)
+        case "conjunction": return dtDyn(0x8B5CF6, 0xA98CF0)
+        case "sextile":     return dtDyn(0x22A06B, 0x46C68E)
+        case "trine":       return dtDyn(0x3B7FD4, 0x6BA3E6)
+        case "square":      return dtDyn(0xD9534F, 0xE87B77)
+        case "opposition":  return dtDyn(0xE07B2E, 0xED9B57)
         default:            return DT.inkSoft
         }
     }

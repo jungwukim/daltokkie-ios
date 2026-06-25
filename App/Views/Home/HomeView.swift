@@ -185,7 +185,7 @@ struct HomeView: View {
                             .font(DT.sans(11, .semibold))
                             .foregroundStyle(DT.accent)
                         if day.overallScore >= 65 {
-                            Text("이번 주 최고예요!")
+                            Text("기운이 좋은 흐름")
                                 .font(DT.sans(11, .semibold))
                                 .foregroundStyle(DT.accent)
                         }

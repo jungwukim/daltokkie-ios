@@ -38,6 +38,7 @@ struct HomeView: View {
                     .padding(.bottom, showCtaBanner ? 104 : 18)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .refreshable { appState.refresh() }
             } else {
                 ContentUnavailableView {
                     Label("운세를 불러올 수 없어요", systemImage: "moon.zzz")

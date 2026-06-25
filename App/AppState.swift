@@ -44,6 +44,12 @@ final class AppState: ObservableObject {
         objectWillChange.send()
     }
 
+    /// 당겨서 새로고침 — 캐시를 비우고 오늘 기준으로 재계산(날짜 변경·오류 후 복구)
+    func refresh() {
+        invalidate()
+        _ = ensureDailyBundle()
+    }
+
     private static func todayComponents() -> (y: Int, m: Int, d: Int) {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Asia/Seoul")!

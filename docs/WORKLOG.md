@@ -32,6 +32,17 @@
 
 ## 작업 히스토리
 
+#### 42. UI/UX 2차 개선 묶음 (#1~#6) (2026-06-26)
+- **요청**: 남은 UI/UX 작업을 to-do로 정리하고 하나씩 체크하며 수행
+- **#1 카피 톤**: "이번 주 최고예요!" → "기운이 좋은 흐름"(과장 완화)
+- **#2 ShareLink**: AI 해석 시트·타로 리딩·궁합 결과 공유. `aiPlainText`(마크다운/이모지 제거 평문, 공유·렌더 공용 `aiIsEmojiScalar`)
+- **#3 타로 3D 플립**: `TarotCardView` rotation3DEffect Y축(중간 90°서 앞↔뒤, 거울상 보정) + AI 버튼 `symbolEffect(.bounce)`
+- **#4 새로고침**: 홈 `refreshable` + `AppState.refresh()`. (시트 `.thinMaterial`은 크래프트지 톤 충돌로 의도적 보류)
+- **#5 다크 모드**: `dtDyn(light,dark)`로 DT 토큰 8종 분기(크래프트지↔나이트), `.preferredColorScheme(.light)` 해제. 시뮬 라이트/다크 양모드 검증
+- **#6 TipKit+접근성**: 주간 페이저 코치마크(`WeeklyPagerTip`, `Tips.configure`), DT 폰트 `relativeTo: .body` Dynamic Type + 루트 `dynamicTypeSize(...accessibility1)` 클램프, 천궁도/명반 `accessibilityLabel`
+- **#7 위젯/Live Activity**: **보류**(실기기·App Group/서명 환경 필요, 시뮬 검증 불가 — 사용자 결정)
+- 전부 표현 레이어, 엔진/스트림/데이터 무변경. iPhone 17 Pro/iOS 26.2 빌드·검증
+
 ### 2026-06-13 세션
 
 #### 1. Claude Code 업데이트 확인

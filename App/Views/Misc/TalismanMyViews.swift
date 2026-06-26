@@ -71,7 +71,7 @@ struct MyView: View {
                             if let saju = appState.ensureSaju() {
                                 infoRow("사주", saju.displayHanja)
                                 infoRow("일간", "\(saju.dayMaster.hanja) — \(saju.dayMasterProfile?.image ?? "")")
-                                infoRow("띠", saju.animal)
+                                infoRow("띠", "\(animalKo(saju.animal))띠")
                             }
                         }
                     }
@@ -107,6 +107,11 @@ struct MyView: View {
             }
             Button("취소", role: .cancel) {}
         }
+    }
+
+    private func animalKo(_ en: String) -> String {
+        ["Rat": "쥐", "Ox": "소", "Tiger": "호랑이", "Rabbit": "토끼", "Dragon": "용", "Snake": "뱀",
+         "Horse": "말", "Goat": "양", "Monkey": "원숭이", "Rooster": "닭", "Dog": "개", "Pig": "돼지"][en] ?? en
     }
 
     private func infoRow(_ label: String, _ value: String) -> some View {

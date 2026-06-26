@@ -25,9 +25,11 @@ struct TalismanView: View {
                         HStack(spacing: 14) {
                             Image(item.asset)
                                 .resizable()
-                                .scaledToFit()
+                                .scaledToFill()
                                 .frame(width: 84, height: 84)
+                                .background(Color(hex: 0xF3ECDD))   // 아트 크림 톤 타일 — 라이트/다크 공통 프레임
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(DT.line, lineWidth: 1))
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(item.name)
                                     .font(DT.serif(17, .bold))

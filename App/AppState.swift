@@ -106,12 +106,14 @@ final class AppState: ObservableObject {
         if let cached = natalChart { return cached }
         guard let p = profile else { return nil }
         do {
+            let geo = RegionCoords.coords(for: p.region)
             let chart = try NatalEngine.calculateNatal(NatalInput(
                 year: p.year, month: p.month, day: p.day,
                 hour: p.hour ?? 12, minute: p.minute,
+                latitude: geo.lat, longitude: geo.lon,
                 unknownTime: p.hour == nil,
                 timezone: "Asia/Seoul"
-            ))
+            ), houseSystem: "W", trueNode: true)
             natalChart = chart
             return chart
         } catch {

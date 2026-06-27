@@ -277,7 +277,7 @@ struct NatalDetailView: View {
     private func houseSection(_ chart: NatalChart) -> some View {
         CraftCard {
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "하우스 (Placidus)")
+                SectionTitle(text: "하우스 (홀사인)")
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())], spacing: 8) {
                     ForEach(chart.houses, id: \.number) { h in houseCell(h) }
                 }

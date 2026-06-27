@@ -113,6 +113,14 @@ enum Houses {
         // ASC: 동쪽 지평선 = 사승각 ARMC + 90°
         let asc = eclipticLonRising(at: armc + 90, latitude: geolat, sinE: sinE, cosE: cosE)
 
+        // 홀사인(Whole Sign): 각 하우스 커스프 = ASC가 속한 사인의 0°부터 30°씩
+        if hsys == "W" {
+            let ascSign = (asc / 30).rounded(.down) * 30
+            var wc = [Double](repeating: 0, count: 13)
+            for i in 1...12 { wc[i] = Eph.degnorm(ascSign + Double(i - 1) * 30) }
+            return HousesResult(cusps: wc, ascmc: [asc, mc, armc])
+        }
+
         // 극권(|φ| ≥ 90 − ε)은 Placidus 정의 불능 → Porphyrius
         if abs(geolat) >= 90 - epsTrue {
             return HousesResult(cusps: porphyry(asc: asc, mc: mc), ascmc: [asc, mc, armc])

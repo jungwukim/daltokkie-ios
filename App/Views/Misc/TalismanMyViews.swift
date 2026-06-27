@@ -70,6 +70,7 @@ struct MyView: View {
                             infoRow("생년월일", "\(p.calendar == "lunar" ? "음력 " : "")\(p.year)년 \(p.month)월 \(p.day)일\(p.isLeapMonth ? " (윤달)" : "")")
                             infoRow("태어난 시간", p.hour.map { String(format: "%02d:%02d", $0, p.minute) } ?? "모름")
                             infoRow("성별", p.gender == "male" ? "남성" : "여성")
+                            regionRow(p.region)
                             if let saju = appState.ensureSaju() {
                                 infoRow("사주", saju.displayHanja)
                                 infoRow("일간", "\(saju.dayMaster.hanja) — \(saju.dayMasterProfile?.image ?? "")")
@@ -114,6 +115,32 @@ struct MyView: View {
     private func animalKo(_ en: String) -> String {
         ["Rat": "쥐", "Ox": "소", "Tiger": "호랑이", "Rabbit": "토끼", "Dragon": "용", "Snake": "뱀",
          "Horse": "말", "Goat": "양", "Monkey": "원숭이", "Rooster": "닭", "Dog": "개", "Pig": "돼지"][en] ?? en
+    }
+
+    /// 출생 지역 — 점성술 ASC/MC 좌표 보정용 (선택 시 즉시 재계산)
+    private func regionRow(_ region: String) -> some View {
+        HStack {
+            Text("출생 지역")
+                .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                .frame(width: 88, alignment: .leading)
+            Menu {
+                ForEach(RegionCoords.names, id: \.self) { name in
+                    Button(name) { setRegion(name) }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(region).font(DT.sans(13, .medium)).foregroundStyle(DT.accent)
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 10)).foregroundStyle(DT.inkSoft)
+                }
+            }
+            Spacer()
+        }
+    }
+
+    private func setRegion(_ name: String) {
+        guard var p = appState.profile, p.region != name else { return }
+        p.region = name
+        appState.profile = p   // didSet → 저장 + 캐시 무효화(재계산)
     }
 
     private func infoRow(_ label: String, _ value: String) -> some View {

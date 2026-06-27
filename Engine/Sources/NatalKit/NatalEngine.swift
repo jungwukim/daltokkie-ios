@@ -126,6 +126,22 @@ public enum NatalEngine {
         ZODIAC_SIGNS[Int(trunc(normalizeDeg(lon) / 30))]
     }
 
+    /// 진교점(오스큘레이팅 승교점) — 달의 순간 궤도면 각운동량 h=r×v 로부터 Ω 계산
+    static func osculatingNodeLongitude(jd: Double) throws -> Double {
+        let m = try Ephemeris.calcPlanet(jd, 1)   // Moon (λ,β,r + 속도)
+        let d2r = Double.pi / 180
+        let lon = m.longitude * d2r, lat = m.latitude * d2r, r = m.distance
+        let dlon = m.longitudeSpeed * d2r, dlat = m.latitudeSpeed * d2r, dr = m.distanceSpeed
+        let cl = cos(lon), sl = sin(lon), cb = cos(lat), sb = sin(lat)
+        let x = r * cb * cl, y = r * cb * sl, z = r * sb
+        let vx = dr * cb * cl - r * sb * cl * dlat - r * cb * sl * dlon
+        let vy = dr * cb * sl - r * sb * sl * dlat + r * cb * cl * dlon
+        let vz = dr * sb + r * cb * dlat
+        let hx = y * vz - z * vy
+        let hy = z * vx - x * vz
+        return normalizeDeg(atan2(hx, -hy) / d2r)   // 승교점 황경
+    }
+
     static func degreeInSign(_ lon: Double) -> Double {
         normalizeDeg(lon).truncatingRemainder(dividingBy: 30)
     }
@@ -231,7 +247,7 @@ public enum NatalEngine {
 
     // MARK: - 메인
 
-    public static func calculateNatal(_ input: NatalInput, houseSystem: String = "P") throws -> NatalChart {
+    public static func calculateNatal(_ input: NatalInput, houseSystem: String = "P", trueNode: Bool = false) throws -> NatalChart {
         let lat = input.latitude ?? DEFAULT_LAT
         let lon = input.longitude ?? DEFAULT_LON
         let unknownTime = input.unknownTime
@@ -266,6 +282,18 @@ public enum NatalEngine {
                 isRetrograde: pos.longitudeSpeed < 0,
                 house: cusps.map { findHouse(pos.longitude, $0) }
             ))
+        }
+
+        // 진교점(true/osculating node) — 요청 시 평균 교점을 오스큘레이팅 교점으로 대체
+        if trueNode, let idx = planets.firstIndex(where: { $0.id == "NorthNode" }) {
+            let om = try osculatingNodeLongitude(jd: jd)
+            let omNext = try osculatingNodeLongitude(jd: jd + 0.5)
+            var d = omNext - om; if d > 180 { d -= 360 }; if d < -180 { d += 360 }
+            let spd = d / 0.5
+            planets[idx] = PlanetPosition(
+                id: "NorthNode", longitude: om, latitude: 0, speed: spd,
+                sign: lonToSign(om), degreeInSign: degreeInSign(om),
+                isRetrograde: spd < 0, house: cusps.map { findHouse(om, $0) })
         }
 
         let northNode = planets.first { $0.id == "NorthNode" }!

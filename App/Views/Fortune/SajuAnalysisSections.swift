@@ -113,7 +113,7 @@ struct SajuAnalysisSections: View {
         }
     }
 
-    // MARK: 운세 달력 (이번 달)
+    // MARK: 운세 달력 (이번 달) — 간지·십성 + 날짜 탭 상세
     private var monthlyCalendarCard: some View {
         let now = Date()
         let year = Calendar.current.component(.year, from: now)
@@ -122,35 +122,7 @@ struct SajuAnalysisSections: View {
         let days = DailyFortuneEngine.calculateMonthlyCalendar(year: year, month: month, dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang, dayMasterHanja: r.dayMaster.hanja, birthYear: appState.profile?.year ?? year)
         var comp = DateComponents(); comp.year = year; comp.month = month; comp.day = 1
         let lead = (Calendar.current.dateComponents([.weekday], from: Calendar.current.date(from: comp) ?? now).weekday ?? 1) - 1
-        func scoreColor(_ s: Int) -> Color {
-            if s >= 70 { return dtDyn(0x5A9E6F, 0x7FC093) }
-            if s >= 50 { return dtDyn(0xE0B450, 0xEBC873) }
-            if s >= 35 { return DT.accent }
-            return dtDyn(0xB0A088, 0x8E826E)
-        }
-        return CraftCard {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "\(year)년 \(month)월 운세 달력")
-                let cols = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-                LazyVGrid(columns: cols, spacing: 4) {
-                    ForEach(["일","월","화","수","목","금","토"], id: \.self) { w in
-                        Text(w).font(DT.sans(9)).foregroundStyle(DT.inkSoft)
-                    }
-                    ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 30) }
-                    ForEach(days, id: \.day) { d in
-                        VStack(spacing: 1) {
-                            Text("\(d.day)").font(DT.sans(10, d.day == today ? .bold : .regular))
-                                .foregroundStyle(d.day == today ? DT.accent : DT.ink)
-                            Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5)
-                        }
-                        .frame(height: 30)
-                        .frame(maxWidth: .infinity)
-                        .background(d.day == today ? DT.accentSoft.opacity(0.5) : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                }
-            }
-        }
+        return MonthlyFortuneCalendar(days: days, year: year, month: month, today: today, lead: lead)
     }
 
     // MARK: 월운(올해 12개월)
@@ -360,5 +332,126 @@ struct SajuAnalysisSections: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - 운세 달력 (간지·십성 표시 + 날짜 탭 → 그날의 기운 상세)
+
+struct MonthlyFortuneCalendar: View {
+    let days: [MonthlyCalendarDay]
+    let year: Int
+    let month: Int
+    let today: Int
+    let lead: Int
+    @State private var selected: Int?
+
+    var body: some View {
+        CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "\(year)년 \(month)월 운세 달력")
+                let cols = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
+                LazyVGrid(columns: cols, spacing: 3) {
+                    ForEach(Array(["일","월","화","수","목","금","토"].enumerated()), id: \.offset) { i, w in
+                        Text(w).font(DT.sans(9))
+                            .foregroundStyle(i == 0 ? DT.accent.opacity(0.85) : DT.inkSoft)
+                    }
+                    ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 50) }
+                    ForEach(days, id: \.day) { d in cell(d) }
+                }
+                if let sel = selected, let d = days.first(where: { $0.day == sel }) {
+                    detail(d)
+                } else {
+                    Text("날짜를 누르면 그날의 기운을 볼 수 있어요")
+                        .font(DT.sans(10)).foregroundStyle(DT.inkSoft).padding(.top, 2)
+                }
+            }
+        }
+    }
+
+    private func cell(_ d: MonthlyCalendarDay) -> some View {
+        let isToday = d.day == today
+        let isSel = d.day == selected
+        return VStack(spacing: 1) {
+            Text("\(d.day)").font(DT.sans(9, isToday ? .bold : .regular))
+                .foregroundStyle(isToday ? DT.accent : DT.ink)
+            Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
+                .font(DT.serif(11, .semibold)).foregroundStyle(elColor(stemElement(d.stemKorean)))
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(d.tenGod).font(DT.sans(7)).foregroundStyle(DT.inkSoft)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5)
+        }
+        .frame(maxWidth: .infinity).frame(height: 50)
+        .background(isSel ? DT.accentSoft : (isToday ? DT.accentSoft.opacity(0.45) : Color.clear))
+        .overlay(isSel ? RoundedRectangle(cornerRadius: 6).stroke(DT.accent, lineWidth: 1) : nil)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .contentShape(Rectangle())
+        .onTapGesture { selected = (selected == d.day) ? nil : d.day }
+    }
+
+    private func detail(_ d: MonthlyCalendarDay) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Rectangle().fill(DT.line).frame(height: 1).padding(.vertical, 2)
+            Text("\(month)월 \(d.day)일 (\(weekday(d.day))) · 그날의 기운")
+                .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
+                    .font(DT.serif(20, .bold)).foregroundStyle(elColor(stemElement(d.stemKorean)))
+                Text("\(d.stemKorean)\(d.branchKorean) · \(d.tenGod)의 날")
+                    .font(DT.sans(13, .semibold)).foregroundStyle(DT.ink)
+                Spacer()
+                Text("\(d.overallScore)점")
+                    .font(DT.sans(13, .bold)).foregroundStyle(scoreColor(d.overallScore))
+            }
+            Text(tendency(d.tenGod, d.overallScore))
+                .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                .fixedSize(horizontal: false, vertical: true).lineSpacing(3)
+        }
+    }
+
+    // MARK: 헬퍼
+    private func scoreColor(_ s: Int) -> Color {
+        if s >= 70 { return dtDyn(0x5A9E6F, 0x7FC093) }
+        if s >= 50 { return dtDyn(0xE0B450, 0xEBC873) }
+        if s >= 35 { return DT.accent }
+        return dtDyn(0xB0A088, 0x8E826E)
+    }
+    private func elColor(_ e: String) -> Color {
+        switch e {
+        case "Wood", "목": return dtDyn(0x4E9A51, 0x6FBF73)
+        case "Fire", "화": return dtDyn(0xD1495B, 0xE5757F)
+        case "Earth", "토": return dtDyn(0xC79A3B, 0xDDBA62)
+        case "Metal", "금": return dtDyn(0x9AA0A6, 0xBCC1C7)
+        case "Water", "수": return dtDyn(0x3F6CB0, 0x6E97D2)
+        default: return DT.inkSoft
+        }
+    }
+    private func stemHanja(_ k: String) -> String { SajuTables.stems.first { $0.korean == k }?.hanja ?? k }
+    private func branchHanja(_ k: String) -> String { SajuTables.branches.first { $0.korean == k }?.hanja ?? k }
+    private func stemElement(_ k: String) -> String { SajuTables.stems.first { $0.korean == k }?.element ?? "" }
+
+    private func weekday(_ day: Int) -> String {
+        var c = DateComponents(); c.year = year; c.month = month; c.day = day
+        let wd = Calendar.current.date(from: c).map { Calendar.current.component(.weekday, from: $0) } ?? 1
+        return ["일","월","화","수","목","금","토"][(wd - 1) % 7]
+    }
+
+    private static let tenGodTendency: [String: String] = [
+        "비견": "내 페이스대로 밀고 가기 좋은 날. 협업보다 단독 플레이가 편해요.",
+        "겁재": "경쟁심·욕심이 커지기 쉬운 날. 하나에 힘을 모아보세요.",
+        "식신": "여유와 즐거움이 복이 되는 날. 좋아하는 일로 충전해요.",
+        "상관": "표현·아이디어가 빛나는 날. 하고 싶은 말은 꺼내보세요.",
+        "편재": "기회가 여기저기 열리는 활동적인 날. 제안을 살펴봐요.",
+        "정재": "착실함이 쌓이는 날. 할 일·지출을 차근차근 정리해요.",
+        "편관": "긴장·압박이 느껴지는 날. 큰일은 핵심부터 끊어서 처리해요.",
+        "정관": "원칙과 책임이 빛나는 날. 약속·마감을 먼저 챙겨요.",
+        "편인": "생각이 깊어지는 날. 혼자 몰입하거나 새 분야를 살펴봐요.",
+        "정인": "마음이 차분히 채워지는 날. 책·휴식으로 나를 돌봐요.",
+    ]
+    private func tendency(_ tenGod: String, _ score: Int) -> String {
+        let base = Self.tenGodTendency[tenGod] ?? "무난하게 흐르는 하루예요."
+        let tail = score >= 65 ? " 흐름이 좋으니 적극적으로 움직여 봐요."
+                 : (score >= 40 ? " 평소 리듬을 지키면 충분해요." : " 무리하지 말고 충전하는 날로 삼아요.")
+        return base + tail
     }
 }

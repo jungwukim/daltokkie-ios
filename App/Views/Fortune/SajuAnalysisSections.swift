@@ -360,14 +360,24 @@ struct MonthlyFortuneCalendar: View {
                         }
                     }
                 }
-                let cols = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
-                LazyVGrid(columns: cols, spacing: 3) {
+                // 주 단위 수동 그리드 (LazyVGrid는 풀스크린에서 높이 collapse 이슈가 있어 회피)
+                HStack(spacing: 3) {
                     ForEach(Array(["일","월","화","수","목","금","토"].enumerated()), id: \.offset) { i, w in
                         Text(w).font(DT.sans(9))
                             .foregroundStyle(i == 0 ? DT.accent.opacity(0.85) : DT.inkSoft)
+                            .frame(maxWidth: .infinity)
                     }
-                    ForEach(0..<lead, id: \.self) { _ in Color.clear.frame(height: 50) }
-                    ForEach(days, id: \.day) { d in cell(d) }
+                }
+                ForEach(weeks.indices, id: \.self) { wi in
+                    HStack(spacing: 3) {
+                        ForEach(0..<7, id: \.self) { di in
+                            if let d = weeks[wi][di] {
+                                cell(d)
+                            } else {
+                                Color.clear.frame(maxWidth: .infinity).frame(height: 50)
+                            }
+                        }
+                    }
                 }
                 if let sel = selected, let d = days.first(where: { $0.day == sel }) {
                     detail(d)
@@ -378,6 +388,14 @@ struct MonthlyFortuneCalendar: View {
             }
         }
         .fullScreenCover(isPresented: $showFull) { FortuneCalendarView() }
+    }
+
+    /// 선행 빈칸 + 날짜를 7칸씩 끊어 주(週) 배열로 (마지막 주는 nil로 패딩)
+    private var weeks: [[MonthlyCalendarDay?]] {
+        var cells: [MonthlyCalendarDay?] = Array(repeating: nil, count: max(0, lead))
+        cells += days.map { Optional($0) }
+        while cells.count % 7 != 0 { cells.append(nil) }
+        return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<$0 + 7]) }
     }
 
     private func cell(_ d: MonthlyCalendarDay) -> some View {

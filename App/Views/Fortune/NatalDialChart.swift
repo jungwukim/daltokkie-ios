@@ -89,7 +89,7 @@ struct NatalDialChart: View {
         let rZodIn  = R * 0.62
         let rGlyph  = R * 0.715
         let rPlanet = R * 0.50
-        let rHub    = R * 0.085
+        let rHub    = R * 0.050   // 작은 피벗 캡 — 바늘 교차(중첩)가 보이도록
 
         // 1) 외곽 드롭 섀도 (입체)
         ctx.fill(disc(rBezel + R * 0.012),
@@ -210,12 +210,14 @@ struct NatalDialChart: View {
         if let ang = chart.angles {
             drawNeedle(ctx, cx: cx, cy: cy,
                        angle: lonToAngle(ang.mc.longitude, rotForRing + bodyRot),
-                       length: rZodIn * 0.84, baseW: R * 0.018, tailLen: rHub * 2.0,
-                       light: Color(hex: 0xDADCE1), dark: Color(hex: 0x76787F), opacity: sweep)
+                       length: rZodIn * 0.84, baseW: R * 0.018, tailLen: R * 0.15,
+                       light: Color(hex: 0xDADCE1), dark: Color(hex: 0x76787F), opacity: sweep,
+                       elevate: 1.0)
             drawNeedle(ctx, cx: cx, cy: cy,
                        angle: lonToAngle(ang.asc.longitude, rotForRing + bodyRot),
-                       length: rZodIn * 1.02, baseW: R * 0.023, tailLen: rHub * 2.4,
-                       light: Color(hex: 0xCB5347), dark: Color(hex: 0x8A2820), opacity: sweep)
+                       length: rZodIn * 1.02, baseW: R * 0.023, tailLen: R * 0.18,
+                       light: Color(hex: 0xCB5347), dark: Color(hex: 0x8A2820), opacity: sweep,
+                       elevate: 2.0)   // ASC가 MC 위에 — 더 큰 그림자로 공간 중첩 강조
             // 축 라벨
             for (lon, label, col) in [(ang.asc.longitude, "ASC", oxblood), (ang.mc.longitude, "MC", Color(hex: 0x4A463E))] {
                 let a = lonToAngle(lon, rotForRing)
@@ -226,19 +228,17 @@ struct NatalDialChart: View {
             }
         }
 
-        // 12) 중앙 허브 — 입체 메탈 보스 (그림자 → 브라스 림 → 메탈 바디 → 라이즈드 탑 → 주얼)
-        ctx.fill(disc(rHub * 1.55), with: .color(.black.opacity(0.30)))
-        ctx.fill(disc(rHub * 1.38), with: .radialGradient(Gradient(colors: [Color(hex: 0xD8B673), Color(hex: 0x7C5E30)]),
-                                                          center: CGPoint(x: cx - rHub * 0.4, y: cy - rHub * 0.4),
-                                                          startRadius: 0, endRadius: rHub * 1.8))
-        ctx.fill(disc(rHub), with: .radialGradient(Gradient(colors: [Color(hex: 0x5A554D), Color(hex: 0x201E1A)]),
-                                                   center: CGPoint(x: cx - rHub * 0.35, y: cy - rHub * 0.35),
-                                                   startRadius: 0, endRadius: rHub * 1.5))
-        ctx.fill(disc(rHub * 0.62), with: .radialGradient(Gradient(colors: [Color(hex: 0x847D72), Color(hex: 0x322F2A)]),
-                                                          center: CGPoint(x: cx - rHub * 0.2, y: cy - rHub * 0.2),
-                                                          startRadius: 0, endRadius: rHub * 0.9))
-        ctx.fill(disc(rHub * 0.28), with: .color(oxblood))
-        ctx.fill(disc2(CGPoint(x: cx - rHub * 0.12, y: cy - rHub * 0.12), rHub * 0.08), with: .color(.white.opacity(0.7)))
+        // 12) 중앙 피벗 캡 — 작게(바늘 중첩 노출) + 입체 보스 + 그림자
+        var hubCtx = ctx
+        hubCtx.addFilter(.shadow(color: .black.opacity(0.5), radius: rHub * 0.5, x: rHub * 0.18, y: rHub * 0.32))
+        hubCtx.fill(disc(rHub), with: .radialGradient(Gradient(colors: [Color(hex: 0x6E675C), Color(hex: 0x201E1A)]),
+                                                      center: CGPoint(x: cx - rHub * 0.35, y: cy - rHub * 0.35),
+                                                      startRadius: 0, endRadius: rHub * 1.5))
+        ctx.stroke(disc(rHub), with: .color(brass.opacity(0.95)), lineWidth: max(1, rHub * 0.16))
+        ctx.fill(disc(rHub * 0.46), with: .radialGradient(Gradient(colors: [Color(hex: 0x8E867A), Color(hex: 0x3A352E)]),
+                                                          center: CGPoint(x: cx - rHub * 0.16, y: cy - rHub * 0.16),
+                                                          startRadius: 0, endRadius: rHub * 0.7))
+        ctx.fill(disc2(CGPoint(x: cx - rHub * 0.16, y: cy - rHub * 0.16), rHub * 0.12), with: .color(.white.opacity(0.75)))
     }
 
     private func disc2(_ c: CGPoint, _ r: CGFloat) -> Path {
@@ -248,17 +248,13 @@ struct NatalDialChart: View {
     // 테이퍼드 글로시 워치핸드 — 뾰족한 끝 + 부풀린 몸통 + 둥근 카운터웨이트
     private func drawNeedle(_ ctx0: GraphicsContext, cx: CGFloat, cy: CGFloat, angle: Double,
                             length L: CGFloat, baseW w: CGFloat, tailLen: CGFloat,
-                            light: Color, dark: Color, opacity: Double) {
-        var ctx = ctx0
+                            light: Color, dark: Color, opacity: Double, elevate: CGFloat) {
         let rad = angle * .pi / 180
         let dx = cos(rad), dy = -sin(rad)        // 끝 방향
         let nx = -dy, ny = dx                     // 좌측 수직
         func P(_ a: CGFloat, _ p: CGFloat) -> CGPoint {
             CGPoint(x: cx + a * dx + p * nx, y: cy + a * dy + p * ny)
         }
-
-        // 카운터웨이트 패들(뒤쪽 원)
-        ctx.fill(disc2(P(-tailLen * 0.6, 0), w * 1.7), with: .color(dark.opacity(opacity)))
 
         // 랜스 몸통 (뾰족한 끝 → 부풀림 → 허브 → 꼬리)
         var p = Path()
@@ -271,15 +267,26 @@ struct NatalDialChart: View {
         p.addLine(to: P(L * 0.34, -w))
         p.addLine(to: P(L * 0.80, -w * 0.22))
         p.closeSubpath()
+        let paddle = disc2(P(-tailLen * 0.62, 0), w * 1.7)
 
-        let g = Gradient(colors: [light, dark])
-        ctx.fill(p, with: .linearGradient(g, startPoint: P(L * 0.35, w * 1.3),
-                                          endPoint: P(L * 0.35, -w * 1.3)))
+        // 그림자 패스 — elevate(높이)에 비례한 소프트 섀도로 공간 중첩(어느 바늘이 위인지) 표현
+        var sctx = ctx0
+        sctx.opacity = opacity
+        sctx.addFilter(.shadow(color: .black.opacity(0.55), radius: w * 1.4 * elevate,
+                               x: w * 0.5 * elevate, y: w * 1.0 * elevate))
+        sctx.fill(paddle, with: .color(dark))
+        sctx.fill(p, with: .color(dark))
+
+        // 본체 (그림자 위)
+        var ctx = ctx0
         ctx.opacity = opacity
+        ctx.fill(paddle, with: .radialGradient(Gradient(colors: [light, dark]),
+                                               center: P(-tailLen * 0.62, -w * 0.5), startRadius: 0, endRadius: w * 2.2))
+        ctx.fill(p, with: .linearGradient(Gradient(colors: [light, dark]),
+                                          startPoint: P(L * 0.35, w * 1.3), endPoint: P(L * 0.35, -w * 1.3)))
         // 스파인 하이라이트
         var spine = Path(); spine.move(to: P(L * 0.92, 0)); spine.addLine(to: P(-tailLen * 0.5, 0))
-        ctx.stroke(spine, with: .color(.white.opacity(0.28)), lineWidth: 0.6)
-        ctx.opacity = 1
+        ctx.stroke(spine, with: .color(.white.opacity(0.30)), lineWidth: 0.7)
     }
 
     private func aspectColor(_ type: String) -> Color {

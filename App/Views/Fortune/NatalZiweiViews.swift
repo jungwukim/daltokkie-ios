@@ -349,14 +349,7 @@ struct ZiweiDetailView: View {
         ScrollView {
             if let chart = appState.ensureZiwei() {
                 VStack(spacing: 16) {
-                    ziweiHero(chart)
-
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SectionTitle(text: "紫微斗數 명반")
-                            ZiweiGridChart(chart: chart, daxian: appState.ziweiDaxian, palaceKo: palaceKo)
-                        }
-                    }
+                    ziweiInstrument(chart)
 
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
@@ -463,31 +456,37 @@ struct ZiweiDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    // MARK: 밤하늘 히어로 (핵심 요약)
-    private func ziweiHero(_ chart: ZiweiChart) -> some View {
+    // MARK: 그래파이트 인스트루먼트 (출생차트 다이얼과 통일) — 명반 + 핵심 요약
+    private func ziweiInstrument(_ chart: ZiweiChart) -> some View {
         let ming = chart.palaces.values.first { $0.name == "命宮" }
         let mingStars = ming.map { $0.stars.prefix(2).map { $0.name }.joined(separator: "·") } ?? ""
         return ZStack {
             RoundedRectangle(cornerRadius: DT.radius)
-                .fill(LinearGradient(colors: [Color(hex: 0x303663), Color(hex: 0x1C1F38)],
-                                     startPoint: .top, endPoint: .bottom))
-            StarField()
+                .fill(RadialGradient(colors: [Color(hex: 0x23211E), Color(hex: 0x100F0E)],
+                                     center: .center, startRadius: 8, endRadius: 360))
             VStack(spacing: 14) {
                 HStack {
                     Text("紫微斗數 명반")
-                        .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(.white)
+                        .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(Color(hex: 0xF1E9DA))
                     Spacer()
-                    Text("✦").font(.system(size: 14)).foregroundStyle(Color(hex: 0xE8C77A))
+                    Text("ASTRA").font(.system(size: 10, weight: .heavy)).tracking(3)
+                        .foregroundStyle(Color(hex: 0xB8975A))
                 }
+                // 명반 그리드 — 브라스 프레임
+                ZiweiGridChart(chart: chart, daxian: appState.ziweiDaxian, palaceKo: palaceKo)
+                    .padding(3)
+                    .background(Color(hex: 0x0E0D0B))
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: 0xB8975A).opacity(0.55), lineWidth: 1.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 HStack(spacing: 10) {
                     DarkStatChip(value: mingStars.isEmpty ? "—" : mingStars, label: "명궁 주성")
                     DarkStatChip(value: chart.wuXingJu.name, label: "오행국")
                     DarkStatChip(value: chart.shenGongZhi, label: "신궁")
                 }
             }
-            .padding(18)
+            .padding(16)
         }
         .clipShape(RoundedRectangle(cornerRadius: DT.radius))
-        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(.white.opacity(0.10), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.18), lineWidth: 1))
     }
 }

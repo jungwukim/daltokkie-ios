@@ -163,23 +163,21 @@ struct SajuDetailView: View {
     // MARK: 밤하늘 히어로
     private func sajuHero(_ r: FortuneTellerResult) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: DT.radius)
-                .fill(RadialGradient(colors: [Color(hex: 0x23211E), Color(hex: 0x100F0E)],
-                                     center: .center, startRadius: 8, endRadius: 360))
+            RoundedRectangle(cornerRadius: DT.radius).fill(DT.card)
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(r.displayHanja)
-                            .font(DT.serif(20, .bold)).foregroundStyle(Color(hex: 0xF1E9DA))
+                            .font(DT.serif(20, .bold)).foregroundStyle(DT.ink)
                         Spacer()
                         Text("\(animalKo(r.animal)) 띠")
-                            .font(DT.sans(12, .semibold)).foregroundStyle(Color(hex: 0xCBAE72))
+                            .font(DT.sans(12, .semibold)).foregroundStyle(Color(hex: 0x8C6E3C))
                     }
                     if let p = r.dayMasterProfile {
                         Text("\(p.name) · \(p.image)")
-                            .font(DT.sans(13, .semibold)).foregroundStyle(Color(hex: 0xCBAE72))
+                            .font(DT.sans(13, .semibold)).foregroundStyle(Color(hex: 0x8C6E3C))
                         Text(p.traits)
-                            .font(DT.sans(12)).foregroundStyle(.white.opacity(0.72)).lineSpacing(4)
+                            .font(DT.sans(12)).foregroundStyle(DT.inkSoft).lineSpacing(4)
                     }
                 }
 
@@ -197,7 +195,7 @@ struct SajuDetailView: View {
             .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: DT.radius))
-        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.18), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.30), lineWidth: 1))
     }
 
     private func tenGodRow(_ title: String, _ stemGod: String, _ branchGod: String) -> some View {

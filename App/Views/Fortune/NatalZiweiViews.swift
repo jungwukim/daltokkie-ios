@@ -53,20 +53,22 @@ struct DarkStatChip: View {
     let label: String
     var tint: Color? = nil
 
+    private static let brass = Color(hex: 0xB8975A)
+
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(DT.sans(13, .bold)).foregroundStyle(.white)
+                .font(DT.sans(13, .bold)).foregroundStyle(DT.ink)
                 .lineLimit(1).minimumScaleFactor(0.6)
             Text(label)
-                .font(DT.sans(9)).foregroundStyle(.white.opacity(0.55))
+                .font(DT.sans(9)).foregroundStyle(DT.inkSoft)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 11)
-        .background((tint ?? .white).opacity(tint == nil ? 0.08 : 0.18),
+        .background((tint ?? Self.brass).opacity(tint == nil ? 0.08 : 0.14),
                     in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12)
-            .stroke((tint ?? .white).opacity(tint == nil ? 0.10 : 0.35), lineWidth: 0.5))
+            .stroke((tint ?? Self.brass).opacity(0.38), lineWidth: 0.7))
     }
 }
 
@@ -146,19 +148,15 @@ struct NatalDetailView: View {
     private func celestialHero(_ chart: NatalChart) -> some View {
         let hasWheel = chart.angles != nil && !chart.houses.isEmpty
         return ZStack {
-            // 그래파이트 인스트루먼트 하우징 (밤하늘 보라/별 배제)
-            RoundedRectangle(cornerRadius: DT.radius)
-                .fill(RadialGradient(colors: [Color(hex: 0x23211E), Color(hex: 0x100F0E)],
-                                     center: .center, startRadius: 8, endRadius: 360))
+            // 크래프트지 라이트 하우징 — 메탈 다이얼/브라스만 포인트
+            RoundedRectangle(cornerRadius: DT.radius).fill(DT.card)
             VStack(spacing: 14) {
                 HStack {
                     Text("출생 차트")
                         .font(DT.serif(16, .bold))
-                        .foregroundStyle(Color(hex: 0xF1E9DA))
+                        .foregroundStyle(DT.ink)
                     Spacer()
-                    Text("ASTRA")
-                        .font(.system(size: 10, weight: .heavy)).tracking(3)
-                        .foregroundStyle(Color(hex: 0xB8975A))
+                    Text("☽").font(.system(size: 15)).foregroundStyle(Color(hex: 0x8C6E3C))
                 }
                 if hasWheel {
                     NatalDialChart(chart: chart)
@@ -169,7 +167,7 @@ struct NatalDetailView: View {
             .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: DT.radius))
-        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.18), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.30), lineWidth: 1))
     }
 
     private func big3Row(_ chart: NatalChart) -> some View {
@@ -186,18 +184,18 @@ struct NatalDetailView: View {
         VStack(spacing: 4) {
             Text(glyph)
                 .font(.system(size: glyph.count > 1 ? 14 : 22, weight: .semibold))
-                .foregroundStyle(Color(hex: 0xE8C77A))
+                .foregroundStyle(Color(hex: 0x8C6E3C))
                 .frame(height: 26)
             Text(zodiacKo[sign] ?? sign)
-                .font(DT.sans(12, .bold)).foregroundStyle(.white)
+                .font(DT.sans(12, .bold)).foregroundStyle(DT.ink)
                 .lineLimit(1).minimumScaleFactor(0.7)
             Text(title)
-                .font(DT.sans(9)).foregroundStyle(.white.opacity(0.55))
+                .font(DT.sans(9)).foregroundStyle(DT.inkSoft)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 11)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.10), lineWidth: 0.5))
+        .background(Color(hex: 0xB8975A).opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: 0xB8975A).opacity(0.32), lineWidth: 0.7))
     }
 
     // MARK: 4대 축 (2×2 그리드)
@@ -461,19 +459,17 @@ struct ZiweiDetailView: View {
         let ming = chart.palaces.values.first { $0.name == "命宮" }
         let mingStars = ming.map { $0.stars.prefix(2).map { $0.name }.joined(separator: "·") } ?? ""
         return ZStack {
-            RoundedRectangle(cornerRadius: DT.radius)
-                .fill(RadialGradient(colors: [Color(hex: 0x23211E), Color(hex: 0x100F0E)],
-                                     center: .center, startRadius: 8, endRadius: 360))
+            RoundedRectangle(cornerRadius: DT.radius).fill(DT.card)
             VStack(spacing: 14) {
                 HStack {
                     Text("紫微斗數 명반")
-                        .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(Color(hex: 0xF1E9DA))
+                        .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(DT.ink)
                     Spacer()
                 }
                 // 명반 그리드 — 얇은 브라스 프레임
                 ZiweiGridChart(chart: chart, daxian: appState.ziweiDaxian, palaceKo: palaceKo)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: 0xB8975A).opacity(0.5), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: 0xB8975A).opacity(0.55), lineWidth: 1.2))
                 HStack(spacing: 10) {
                     DarkStatChip(value: mingStars.isEmpty ? "—" : mingStars, label: "명궁 주성")
                     DarkStatChip(value: chart.wuXingJu.name, label: "오행국")
@@ -483,6 +479,6 @@ struct ZiweiDetailView: View {
             .padding(16)
         }
         .clipShape(RoundedRectangle(cornerRadius: DT.radius))
-        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.18), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.30), lineWidth: 1))
     }
 }

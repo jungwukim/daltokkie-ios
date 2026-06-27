@@ -146,22 +146,22 @@ struct NatalDetailView: View {
     private func celestialHero(_ chart: NatalChart) -> some View {
         let hasWheel = chart.angles != nil && !chart.houses.isEmpty
         return ZStack {
+            // 그래파이트 인스트루먼트 하우징 (밤하늘 보라/별 배제)
             RoundedRectangle(cornerRadius: DT.radius)
-                .fill(LinearGradient(colors: [Color(hex: 0x303663), Color(hex: 0x1C1F38)],
-                                     startPoint: .top, endPoint: .bottom))
-            StarField()
+                .fill(RadialGradient(colors: [Color(hex: 0x23211E), Color(hex: 0x100F0E)],
+                                     center: .center, startRadius: 8, endRadius: 360))
             VStack(spacing: 14) {
                 HStack {
                     Text("출생 차트")
                         .font(DT.serif(16, .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color(hex: 0xF1E9DA))
                     Spacer()
-                    Text("☽")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color(hex: 0xE8C77A))
+                    Text("ASTRA")
+                        .font(.system(size: 10, weight: .heavy)).tracking(3)
+                        .foregroundStyle(Color(hex: 0xB8975A))
                 }
                 if hasWheel {
-                    NatalWheelChart(chart: chart, onDark: true)
+                    NatalDialChart(chart: chart)
                         .padding(.horizontal, 2)
                 }
                 big3Row(chart)
@@ -169,7 +169,7 @@ struct NatalDetailView: View {
             .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: DT.radius))
-        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(.white.opacity(0.10), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.18), lineWidth: 1))
     }
 
     private func big3Row(_ chart: NatalChart) -> some View {

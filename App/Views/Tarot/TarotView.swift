@@ -233,7 +233,8 @@ struct TarotCardView: View {
             .rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
-            if revealed {
+            // 이름·키워드 영역 — 뒤집기 전후 셀 높이 동일하도록 항상 공간 예약(숨김만)
+            VStack(spacing: 2) {
                 Text(drawn.card.nameKo + (drawn.isReversed ? " (역)" : ""))
                     .font(DT.sans(10, .semibold)).foregroundStyle(drawn.isReversed ? Color(hex: 0xD45555) : DT.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
@@ -241,6 +242,10 @@ struct TarotCardView: View {
                     .font(DT.sans(8)).foregroundStyle(DT.inkSoft).multilineTextAlignment(.center)
                     .lineLimit(2).minimumScaleFactor(0.7)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 34, alignment: .top)
+            .opacity(revealed ? 1 : 0)
+            .accessibilityHidden(!revealed)
         }
         .onAppear { angle = revealed ? 180 : 0 }
         .onChange(of: revealed) { _, now in

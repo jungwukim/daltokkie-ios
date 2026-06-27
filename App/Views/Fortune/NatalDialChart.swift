@@ -134,15 +134,20 @@ struct NatalDialChart: View {
             ctx.stroke(tk, with: .color(tickInk.opacity((major ? 0.85 : 0.5) * appear)),
                        lineWidth: major ? 1.6 : 0.8)
         }
-        ctx.stroke(disc(rZodOut), with: .color(tickInk.opacity(0.35 * appear)), lineWidth: 0.8)
-        ctx.stroke(disc(rZodIn), with: .color(tickInk.opacity(0.30 * appear)), lineWidth: 0.8)
+        // 경계 원선은 옅게 — 별자리 글리프 가독성 우선
+        ctx.stroke(disc(rZodOut), with: .color(tickInk.opacity(0.16 * appear)), lineWidth: 0.6)
+        ctx.stroke(disc(rZodIn), with: .color(tickInk.opacity(0.10 * appear)), lineWidth: 0.5)
 
-        // 6) 별자리 글리프 (음각 톤, 각 사인 중앙)
+        // 6) 별자리 글리프 (또렷한 음각, 각 사인 중앙)
         for i in 0..<12 {
             let mid = lonToAngle(Double(i) * 30 + 15, rotForRing)
+            let gp = pt(mid, rGlyph)
             ctx.opacity = appear
-            ctx.draw(Text(signGlyphs[i]).font(.system(size: side * 0.044, weight: .medium)).foregroundColor(ink.opacity(0.85)),
-                     at: pt(mid, rGlyph))
+            // 음각 느낌: 밝은 하이라이트 살짝 + 본체
+            ctx.draw(Text(signGlyphs[i]).font(.system(size: side * 0.052, weight: .semibold)).foregroundColor(.white.opacity(0.5)),
+                     at: CGPoint(x: gp.x - 0.4, y: gp.y - 0.5))
+            ctx.draw(Text(signGlyphs[i]).font(.system(size: side * 0.052, weight: .semibold)).foregroundColor(ink),
+                     at: gp)
             ctx.opacity = 1
         }
 
@@ -218,13 +223,16 @@ struct NatalDialChart: View {
                        length: rZodIn * 1.02, baseW: R * 0.023, tailLen: R * 0.18,
                        light: Color(hex: 0xCB5347), dark: Color(hex: 0x8A2820), opacity: sweep,
                        elevate: 2.0)   // ASC가 MC 위에 — 더 큰 그림자로 공간 중첩 강조
-            // 축 라벨
-            for (lon, label, col) in [(ang.asc.longitude, "ASC", oxblood), (ang.mc.longitude, "MC", Color(hex: 0x4A463E))] {
+            // 축 표식 — 베젤에 음각(champagne) + 정밀 노치(바늘색 연동)
+            let rLabel = rDial + (rBezel - rDial) * 0.52
+            for (lon, label, notch) in [(ang.asc.longitude, "ASC", oxblood), (ang.mc.longitude, "MC", Color(hex: 0x9A9CA2))] {
                 let a = lonToAngle(lon, rotForRing)
+                // 노치(베젤 안쪽→바깥 짧은 굵은 선)
+                var nk = Path(); nk.move(to: pt(a, rDial + R * 0.012)); nk.addLine(to: pt(a, rBezel - R * 0.02))
                 ctx.opacity = appear
-                ctx.draw(Text(label).font(.system(size: side * 0.028, weight: .heavy)).foregroundColor(col),
-                         at: pt(a, rDial + (rBezel - rDial) * 0.5))
+                ctx.stroke(nk, with: .color(notch), lineWidth: R * 0.012)
                 ctx.opacity = 1
+                engrave(&ctx, label, at: pt(a, rLabel), size: side * 0.030, appear: appear)
             }
         }
 
@@ -243,6 +251,17 @@ struct NatalDialChart: View {
 
     private func disc2(_ c: CGPoint, _ r: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
+    }
+
+    /// 다크 메탈 베젤용 음각 글자 — 어두운 홈 그림자 + champagne 하이라이트
+    private func engrave(_ ctx: inout GraphicsContext, _ s: String, at p: CGPoint, size: CGFloat, appear: Double) {
+        let f = Font.system(size: size, weight: .heavy)
+        ctx.opacity = appear
+        ctx.draw(Text(s).font(f).foregroundColor(.black.opacity(0.6)),
+                 at: CGPoint(x: p.x + 0.6, y: p.y + 0.8))           // 홈 그림자
+        ctx.draw(Text(s).font(f).foregroundColor(Color(hex: 0xCBAE72)),
+                 at: CGPoint(x: p.x - 0.3, y: p.y - 0.4))           // champagne 하이라이트
+        ctx.opacity = 1
     }
 
     // 테이퍼드 글로시 워치핸드 — 뾰족한 끝 + 부풀린 몸통 + 둥근 카운터웨이트

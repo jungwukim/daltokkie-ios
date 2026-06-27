@@ -104,7 +104,7 @@ enum AIProxy {
     /// 일일운세 AI 심층 편지 스트리밍 — POST /api/daily/interpret
     static func interpretDaily(
         day: DailyFortuneResult, weekday: String, sinsals: [String],
-        gender: String, birthYear: Int, region: String? = nil
+        gender: String, birthYear: Int, region: String? = nil, style: String = "letter"
     ) -> AsyncThrowingStream<String, Error> {
         let conditions: [[String: Any]] = day.cards.map {
             ["name": $0.category, "score": $0.score, "grade": $0.grade]
@@ -127,6 +127,7 @@ enum AIProxy {
             "sinsals": sinsals,
             "gender": gender,
             "birthYear": birthYear,
+            "style": style,
         ]
         return stream(path: "/api/daily/interpret", payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }

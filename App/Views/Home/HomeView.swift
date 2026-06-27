@@ -24,7 +24,7 @@ struct HomeView: View {
     @State private var showConditionsDetail = false
     @State private var showAILetter = false
     @State private var aiDay: DailyFortuneResult?
-    private let heroHeight: CGFloat = 392
+    private let heroHeight: CGFloat = 282
 
     var body: some View {
         let bundle = appState.ensureDailyBundle()
@@ -48,6 +48,7 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .refreshable { appState.refresh() }
+                .task(id: bundle.today.date) { appState.ensureHeroLines() }
             } else {
                 ContentUnavailableView {
                     Label("운세를 불러올 수 없어요", systemImage: "moon.zzz")
@@ -129,14 +130,14 @@ struct HomeView: View {
     // MARK: - 히어로 (오늘의 달빛 편지) — 토끼 우측 가득 + 코너 프레임
 
     private func heroBanner(_ day: DailyFortuneResult, _ index: Int, _ bundle: DailyFortuneBundle) -> some View {
-        let letter = MoonLetters.generate(from: day,
-                                          natalDayStem: bundle.saju.raw.day.stem,
-                                          natalDayBranch: bundle.saju.raw.day.branch)
-        let dayLabel = (day.date == bundle.today.date) ? "오늘" : weekdayKo(day.date)
+        let isToday = (day.date == bundle.today.date)
+        // 주간 7일치 AI 한 줄(캐시) 우선, 없으면 규칙 기반 요약으로 폴백
+        let letter = appState.heroLines[day.date] ?? MoonLetters.summary(from: day)
+        let dayLabel = isToday ? "오늘" : weekdayKo(day.date)
         return ZStack(alignment: .bottomTrailing) {
             // 좌측 텍스트가 ZStack 폭을 결정 — 토끼는 overlay로 우측에 (폭 안 늘림)
             VStack(alignment: .leading, spacing: 0) {
-                // 날짜
+                // 날짜 + 달빛 편지(우측 같은 라인 — 한 줄 절약)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(dateMD(day.date))
                         .font(DT.sans(30, .bold))
@@ -144,46 +145,47 @@ struct HomeView: View {
                     Text(weekday(day.date))
                         .font(DT.sans(14, .semibold))
                         .foregroundStyle(DT.inkSoft)
-                }
-                Button {
-                    aiDay = day
-                    showAILetter = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("\(dayLabel)의 달빛 편지")
-                            .font(DT.serif(14, .semibold))
-                            .foregroundStyle(DT.inkSoft)
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11))
-                            .foregroundStyle(DT.accent)
+                    Spacer(minLength: 8)
+                    Button {
+                        aiDay = day
+                        showAILetter = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("\(dayLabel)의 달빛 편지")
+                                .font(DT.serif(13, .semibold))
+                                .foregroundStyle(DT.inkSoft)
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11))
+                                .foregroundStyle(DT.accent)
+                        }
                     }
                 }
-                .padding(.top, 3)
 
                 Text(letter.title)
                     .font(DT.serif(20, .bold))
                     .foregroundStyle(DT.ink)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 185, alignment: .leading)   // 토끼와 안 겹치게 글귀 폭 제한
-                    .padding(.top, 16)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: 300, alignment: .leading)   // 한 줄로 가로로 길게
+                    .padding(.top, 12)
 
                 Text(letter.body)
                     .font(DT.sans(13))
                     .foregroundStyle(DT.inkSoft)
                     .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 185, alignment: .leading)
-                    .padding(.top, 14)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)   // AI 한 줄 길이 편차 흡수 (항상 2줄로 고정)
+                    .frame(maxWidth: 215, alignment: .leading)
+                    .padding(.top, 10)
 
                 Divider()
                     .frame(width: 130)
-                    .padding(.top, 18)
+                    .padding(.top, 12)
 
                 Text("\(dayLabel)의 행운지수")
                     .font(DT.serif(13, .semibold))
                     .foregroundStyle(DT.inkSoft)
-                    .padding(.top, 14)
+                    .padding(.top, 10)
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text("\(day.overallScore)")
                         .font(DT.sans(32, .bold))
@@ -219,9 +221,10 @@ struct HomeView: View {
                     .background(DT.accentSoft)
                     .clipShape(Capsule())
                 }
-                .padding(.top, 16)
+                .padding(.top, 12)
             }
-            .padding(18)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity)
@@ -232,8 +235,8 @@ struct HomeView: View {
             Image("moon-rabbit")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 220)
-                .offset(x: 8, y: 2)
+                .frame(width: 150)
+                .offset(x: 4, y: 18)   // 아래로 내려 토끼 밑선이 박스 하단에 클립되게
                 .allowsHitTesting(false)
         }
         .clipShape(RoundedRectangle(cornerRadius: 18))

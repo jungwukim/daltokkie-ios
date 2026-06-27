@@ -17,6 +17,10 @@ final class AppState: ObservableObject {
     }
     @Published var selectedTab: Tab = .home
 
+    /// 홈 히어로 'AI 한 줄' — 날짜별 캐시(주간 7일치 한 번에 생성). 없으면 규칙 기반 요약으로 폴백
+    @Published var heroLines: [String: MoonLetter] = [:]
+    private var heroLinesLoading: Set<String> = []
+
     enum Tab: String, CaseIterable {
         case home, talisman, fortune, tarot, my
     }
@@ -37,6 +41,8 @@ final class AppState: ObservableObject {
     private func invalidate() {
         sajuResult = nil
         dailyBundle = nil
+        heroLines = [:]
+        heroLinesLoading = []
         natalChart = nil
         ziweiChart = nil
         ziweiLiunian = nil
@@ -128,6 +134,79 @@ final class AppState: ObservableObject {
         )
         dailyBundle = bundle
         return bundle
+    }
+
+    // MARK: - 홈 히어로 AI 한 줄 (하루 1회 생성·캐시, 실패/오프라인 시 규칙 기반 폴백)
+
+    private func heroLineCacheKey(date: String, _ p: UserProfile) -> String {
+        let sig = "\(p.year).\(p.month).\(p.day).\(p.hour ?? -1).\(p.minute).\(p.gender).\(p.calendar).\(p.region)"
+        return "heroAILine|\(date)|\(sig)"
+    }
+
+    /// 3줄 AI 텍스트 → MoonLetter(첫 줄=큰 글귀, 나머지=본문).
+    /// 짧은 3줄 형식만 수용 — 긴 편지/마크다운(구버전 서버)·이상 출력은 nil로 거부(→ 규칙 기반 폴백)
+    private static func parseHeroLine(_ text: String) -> MoonLetter? {
+        func clean(_ s: Substring) -> String {
+            s.trimmingCharacters(in: CharacterSet(charactersIn: " \t\"'“”‘’-•*#").union(.whitespaces))
+        }
+        let lines = text.split(separator: "\n").map(clean).filter { !$0.isEmpty }
+        guard (1...3).contains(lines.count) else { return nil }       // 편지(여러 문단) 거부
+        guard let first = lines.first, first.count <= 20 else { return nil }
+        guard !lines.contains(where: { $0.count > 32 }) else { return nil }   // 긴 문장 거부
+        let body = lines.dropFirst().prefix(2).joined(separator: "\n")
+        return MoonLetter(title: first, body: body.isEmpty ? "오늘 하루도 잘 보내요." : body)
+    }
+
+    private static func koWeekday(_ date: String) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        guard let d = f.date(from: date) else { return "" }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let wd = cal.component(.weekday, from: d)   // 1=일
+        return ["일", "월", "화", "수", "목", "금", "토"][(wd - 1) % 7] + "요일"
+    }
+
+    /// 주간 7일치(오늘±3) AI 한 줄을 한 번에 확보 — 날짜별로 캐시 있으면 즉시,
+    /// 없는 날만 비동기 생성 후 날짜별 캐시(실패/이상 출력은 거부 → 해당 날 규칙 폴백)
+    func ensureHeroLines() {
+        guard let p = profile, let bundle = ensureDailyBundle() else { return }
+        let stem = bundle.saju.raw.day.stem, branch = bundle.saju.raw.day.branch
+        for day in bundle.fortunes {
+            if heroLines[day.date] != nil || heroLinesLoading.contains(day.date) { continue }
+            let key = heroLineCacheKey(date: day.date, p)
+            if let cached = UserDefaults.standard.string(forKey: key), let m = Self.parseHeroLine(cached) {
+                heroLines[day.date] = m
+                continue
+            }
+            heroLinesLoading.insert(day.date)
+            let sinsals = HoshinSinSal.transitSinSals(transitBranch: day.dayBranchKorean,
+                                                      natalDayStem: stem, natalDayBranch: branch)
+            let weekday = Self.koWeekday(day.date)
+            let target = day
+            Task { [weak self] in
+                guard let self else { return }
+                var full = ""
+                do {
+                    for try await chunk in AIProxy.interpretDaily(
+                        day: target, weekday: weekday, sinsals: sinsals,
+                        gender: p.gender, birthYear: p.year, region: p.region, style: "oneline") {
+                        full += chunk
+                    }
+                } catch {
+                    await MainActor.run { self.heroLinesLoading.remove(target.date) }
+                    return   // 폴백(규칙 기반) 유지
+                }
+                let text = full.trimmingCharacters(in: .whitespacesAndNewlines)
+                await MainActor.run {
+                    self.heroLinesLoading.remove(target.date)
+                    guard let m = Self.parseHeroLine(text) else { return }
+                    UserDefaults.standard.set(text, forKey: key)
+                    self.heroLines[target.date] = m
+                }
+            }
+        }
     }
 
     /// 프로필 생년월일을 양력으로 — 음력 입력이면 양력 변환(사주와 동일 LegacyLunarConverter).

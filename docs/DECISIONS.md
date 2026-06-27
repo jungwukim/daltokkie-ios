@@ -178,6 +178,17 @@
 **관련 파일**: `App/Views/Fortune/ZiweiGridChart.swift`, `NatalWheelChart.swift`, `NatalZiweiViews.swift`
 **남은 단계**: 사주 상세(지장간/합충형파해/공망/신살/세운/월운 + 분포 차트 — 엔진 EngineAnalysis 함수 public 노출 확인 필요), 궁합 고도화
 
+### DEC-017: 홈 히어로 '오늘의 운세 한 줄' — 하이브리드(AI 한 줄 7일 캐시 + 규칙 폴백) (2026-06-27)
+
+**결정**: 홈 달빛 편지 히어로 문구를 **AI 한 줄(3줄) 주력 + 규칙 기반 요약 폴백**으로 구성. AI는 `/api/daily/interpret`의 신규 `style:"oneline"` 모드로 그날 일진 기반 짧은 3줄을 생성하고, **페이저 범위 7일치(오늘±3)를 한 번에 생성→날짜별 `UserDefaults` 캐시**(키=날짜+프로필). 첫 줄=큰 글귀, 나머지=본문 매핑. 짧은 3줄 검증(1~3줄·첫줄≤20자·각줄≤32자)을 통과해야만 채택, 아니면 규칙 폴백
+**근거**:
+- 규칙 기반 템플릿(점수 구간+영역)은 본질적으로 유한 → "몇 번 쓰면 반복" 지적. 진짜 매일 다른 글은 LLM이 적합
+- 정확도: `daily-one-liner` 콘텐츠 라우트는 그날 일진을 계산하지 않아 LLM이 환각 → 이미 정확한 일진을 받는 `/api/daily/interpret`에 모드 추가가 정확
+- 히어로는 즉시 로드돼야 함 → 캐시(하루 1호출 분량, 7일치는 주간 진입 시 1회) + 오프라인/실패 시 규칙 폴백으로 항상 즉시 표시
+**대안 검토**: ① 앱에서 직접 LLM 호출 — 키 노출로 반려(기존 결정 유지) ② 규칙 풀만 확장 — 결국 반복이라 반려 ③ 매 진입 실시간 AI — 지연·비용으로 반려(캐시로 대체) ④ 인앱 A/B 토글 — 비교 후 단일안 확정으로 제거
+**관련 파일**: `App/AppState.swift`(`ensureHeroLines`/캐시/`parseHeroLine`), `App/AIProxyClient.swift`(`style`), `App/Views/Home/HomeView.swift`, `App/Views/Home/MoonLetter.swift`(규칙 폴백), saju-api `app/api/daily/interpret/route.ts`(oneline, 커밋 a2b3d4a)
+**관련**: DEC-015(AI 심층 편지 — 전체 편지는 ✨탭 유지)
+
 ---
 
 ## 결정 템플릿

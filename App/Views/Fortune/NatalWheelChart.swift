@@ -62,7 +62,8 @@ struct NatalWheelChart: View {
     }
 
     private func draw(_ ctx: GraphicsContext, side: CGFloat) {
-        let cx = side / 2, cy = side / 2, R = side / 2
+        // 캔버스 가장자리에 축 라벨(ASC/MC) 여백 확보 — R을 반지름의 92%로 축소
+        let cx = side / 2, cy = side / 2, R = side / 2 * 0.92
         let rOuter = R * 0.97, rSignIn = R * 0.80, rHouseLbl = R * 0.70
         let rPlanet = R * 0.56, rInner = R * 0.42
         let ascLon = chart.angles?.asc.longitude ?? 0

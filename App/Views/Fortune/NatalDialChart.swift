@@ -223,16 +223,11 @@ struct NatalDialChart: View {
                        length: rZodIn * 1.02, baseW: R * 0.023, tailLen: R * 0.18,
                        light: Color(hex: 0xCB5347), dark: Color(hex: 0x8A2820), opacity: sweep,
                        elevate: 2.0)   // ASC가 MC 위에 — 더 큰 그림자로 공간 중첩 강조
-            // 축 표식 — 베젤에 음각(champagne) + 정밀 노치(바늘색 연동)
-            let rLabel = rDial + (rBezel - rDial) * 0.52
-            for (lon, label, notch) in [(ang.asc.longitude, "ASC", oxblood), (ang.mc.longitude, "MC", Color(hex: 0x9A9CA2))] {
+            // 축 표식 — 베젤에 가는 음각(바늘이 이미 축을 가리키므로 노치 없음)
+            let rLabel = rDial + (rBezel - rDial) * 0.54
+            for (lon, label) in [(ang.asc.longitude, "ASC"), (ang.mc.longitude, "MC")] {
                 let a = lonToAngle(lon, rotForRing)
-                // 노치(베젤 안쪽→바깥 짧은 굵은 선)
-                var nk = Path(); nk.move(to: pt(a, rDial + R * 0.012)); nk.addLine(to: pt(a, rBezel - R * 0.02))
-                ctx.opacity = appear
-                ctx.stroke(nk, with: .color(notch), lineWidth: R * 0.012)
-                ctx.opacity = 1
-                engrave(&ctx, label, at: pt(a, rLabel), size: side * 0.030, appear: appear)
+                engrave(&ctx, label, at: pt(a, rLabel), size: side * 0.026, appear: appear)
             }
         }
 
@@ -253,14 +248,16 @@ struct NatalDialChart: View {
         Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
     }
 
-    /// 다크 메탈 베젤용 음각 글자 — 어두운 홈 그림자 + champagne 하이라이트
+    /// 다크 메탈 베젤용 가는 음각(recessed) 글자 — 위-왼쪽 그늘 + 아래-오른쪽 입사광 + champagne 면
     private func engrave(_ ctx: inout GraphicsContext, _ s: String, at p: CGPoint, size: CGFloat, appear: Double) {
-        let f = Font.system(size: size, weight: .heavy)
+        let f = Font.system(size: size, weight: .medium).width(.condensed)
         ctx.opacity = appear
         ctx.draw(Text(s).font(f).foregroundColor(.black.opacity(0.6)),
-                 at: CGPoint(x: p.x + 0.6, y: p.y + 0.8))           // 홈 그림자
-        ctx.draw(Text(s).font(f).foregroundColor(Color(hex: 0xCBAE72)),
-                 at: CGPoint(x: p.x - 0.3, y: p.y - 0.4))           // champagne 하이라이트
+                 at: CGPoint(x: p.x - 0.4, y: p.y - 0.5))        // 위-왼쪽 그늘
+        ctx.draw(Text(s).font(f).foregroundColor(.white.opacity(0.28)),
+                 at: CGPoint(x: p.x + 0.4, y: p.y + 0.5))        // 아래-오른쪽 입사광
+        ctx.draw(Text(s).font(f).foregroundColor(Color(hex: 0xBFA15A)),
+                 at: p)                                           // champagne 면
         ctx.opacity = 1
     }
 

@@ -79,6 +79,37 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 사주 시점 타임라인(실제 연도) — LLM이 연도를 환각하지 않도록 대운/세운/월운을 직접 제공
+    func sajuTimelineJSON() -> [String: Any]? {
+        guard let r = ensureSaju(), let p = profile else { return nil }
+        let cy = Self.todayComponents().y
+        let age = cy - p.year
+        let dme = r.dayMaster.element, dmy = r.dayMaster.yin_yang, dmh = r.dayMaster.hanja
+
+        let daeun = HoshinDaeUn.calculateDaeUn(r.raw)
+        let daeunArr: [[String: Any]] = daeun.map { d in
+            ["startAge": d.startAge, "endAge": d.endAge,
+             "startYear": p.year + d.startAge, "endYear": p.year + d.endAge,
+             "ganzhi": "\(d.stem)\(d.branch)", "stemElement": d.stemElement, "branchElement": d.branchElement]
+        }
+        let currentDaeun = daeunArr.first {
+            ($0["startAge"] as? Int ?? 0) <= age && age <= ($0["endAge"] as? Int ?? 0)
+        }
+        var saeun: [[String: Any]] = []
+        for y in cy...(cy + 4) {
+            let yf = EngineAnalysis.calculateYearFortune(targetYear: y, dayMasterElement: dme, dayMasterYinYang: dmy, dayMasterHanja: dmh)
+            saeun.append(["year": y, "ganzhi": "\(yf.stemHanja)\(yf.branchHanja)",
+                          "tenGodStem": yf.tenGodStem, "tenGodBranch": yf.tenGodBranch, "element": yf.stemElement])
+        }
+        let months = EngineAnalysis.calculateMonthlyPillars(targetYear: cy, dayMasterElement: dme, dayMasterYinYang: dmy, dayMasterHanja: dmh)
+        let monthly: [[String: Any]] = months.map {
+            ["month": $0.month, "ganzhi": "\($0.stemHanja)\($0.branchHanja)", "tenGodStem": $0.tenGodStem]
+        }
+        var t: [String: Any] = ["currentYear": cy, "age": age, "daeun": daeunArr, "saeun": saeun, "monthlyOfCurrentYear": monthly]
+        if let cd = currentDaeun { t["currentDaeun"] = cd }
+        return t
+    }
+
     @discardableResult
     func ensureDailyBundle() -> DailyFortuneBundle? {
         let today = Self.todayComponents()

@@ -32,6 +32,15 @@
 
 ## 작업 히스토리
 
+#### 50. AI 콘텐츠 정확도 — 표 렌더·공통 컨텍스트·실제 타임라인 (2026-06-27)
+- **문제**: 재물 타이밍 등에서 ① 연도 환각(2024) ② 마크다운 표 raw 깨짐 ③ 지역/날짜/나이 미전달
+- **아키텍처 확인**: 계산은 전부 온디바이스 엔진, 서버(daltokkie.vercel.app/saju-api)는 **LLM 텍스트 생성 프록시**(차트 재계산 안 함). 버그=정확한 온디바이스 값을 LLM에 안 먹임
+- **표 렌더(앱, 즉효)**: `FormattedAIText` 마크다운 표 파싱 — 구분/헤더행 제거, 데이터행 비어있지 않은 셀 " · " 불릿. 공용이라 전 콘텐츠 일괄
+- **공통 컨텍스트**: `AIProxy.commonContext(birthYear,region)` → currentYear/today/age/koreanAge/region을 6개 엔드포인트(saju/natal/ziwei/tarot/daily/content) 전부 merge. 호출부 region 전달(타로는 appState 주입)
+- **실제 타임라인**: `AppState.sajuTimelineJSON()` — 대운(실제 startYear/endYear)·세운(올해+4년)·월운(올해 12개월)을 사주 content/interpret payload에 주입 → LLM이 연도 환각 대신 엔진 계산값 사용
+- **남은 일**: 서버(saju-api) 프롬프트가 timeline/context 필드를 실제 소비하도록 갱신해야 텍스트에 반영
+- **검증**: 빌드 성공, 표 렌더 샘플 확인 ✅
+
 #### 49. 히어로 톤 라이트화 — 크래프트지 하우징 (2026-06-27)
 - **피드백**: 인스트루먼트 히어로(점성·자미·사주)가 너무 어둡다(앱 크림 톤과 이질)
 - **사용자 선택**: 크래프트지 라이트 — 하우징을 앱과 동일 크림 카드로, 메탈/브라스/아이보리는 포인트로

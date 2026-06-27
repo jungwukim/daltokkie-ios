@@ -133,13 +133,13 @@ struct SajuDetailView: View {
                     SajuAnalysisSections(r: r, pillars: pillars, phase: .timeline)
 
                     AIInterpretationView(title: "달토끼 심층 해석") {
-                        AIProxy.interpretSaju(result: r, gender: profile.gender, birthYear: profile.year, region: profile.region)
+                        AIProxy.interpretSaju(result: r, gender: profile.gender, birthYear: profile.year, region: profile.region, timeline: appState.sajuTimelineJSON())
                     }
 
                     AIContentPanel(title: "세부 해석", sections: AIContentSections.saju) { id, tone in
                         AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                         birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
-                                        sajuResult: r, region: profile.region)
+                                        sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON())
                     }
                 }
                 .padding(.horizontal, DT.pagePadding)

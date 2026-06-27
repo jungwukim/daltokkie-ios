@@ -68,7 +68,8 @@ enum AIProxy {
     static func content(
         id: String, tone: String,
         gender: String, birthYear: Int, birthMonth: Int, birthDay: Int, birthHour: Int?, birthMinute: Int,
-        sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil, region: String? = nil
+        sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil,
+        region: String? = nil, timeline: [String: Any]? = nil
     ) -> AsyncThrowingStream<String, Error> {
         var payload: [String: Any] = [
             "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
@@ -77,6 +78,7 @@ enum AIProxy {
         if let h = birthHour { payload["birthHour"] = h }
         if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
         if let n = natalChart { payload["natalChart"] = jsonValue(n) }
+        if let tl = timeline { payload["timeline"] = tl }   // 실제 연도 대운/세운/월운
         return stream(path: "/api/saju/content/\(id)",
                       payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
@@ -88,13 +90,14 @@ enum AIProxy {
     /// 사주 AI 해석 스트리밍 — POST /api/saju/interpret
     /// 반환: 텍스트 청크 AsyncStream
     static func interpretSaju(
-        result: FortuneTellerResult, gender: String, birthYear: Int, region: String? = nil
+        result: FortuneTellerResult, gender: String, birthYear: Int, region: String? = nil, timeline: [String: Any]? = nil
     ) -> AsyncThrowingStream<String, Error> {
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "sajuResult": sajuResultJSON(result),
             "gender": gender,
             "birthYear": birthYear,
         ]
+        if let tl = timeline { payload["timeline"] = tl }
         return stream(path: "/api/saju/interpret", payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
 

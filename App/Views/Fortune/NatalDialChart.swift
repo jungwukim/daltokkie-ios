@@ -35,7 +35,7 @@ struct NatalDialChart: View {
     var body: some View {
         // TimelineView(.animation)로 매 프레임 구동 — Canvas는 withAnimation만으로 보간 redraw 안 됨
         TimelineView(.animation(paused: finished)) { timeline in
-            let t = timeline.date.timeIntervalSince(startedAt)
+            let t = finished ? 99.0 : timeline.date.timeIntervalSince(startedAt)
             Canvas { ctx, size in draw(ctx, side: size.width, t: t) }
                 .aspectRatio(1, contentMode: .fit)
         }
@@ -206,14 +206,16 @@ struct NatalDialChart: View {
             }
         }
 
-        // 11) ASC / MC 바늘 — 옥스블러드/그래파이트, sweep 스윕
+        // 11) ASC / MC 바늘 — 테이퍼드 글로시 워치핸드(카운터웨이트), sweep 스윕
         if let ang = chart.angles {
-            drawNeedle(ctx, cx: cx, cy: cy, pt: pt,
+            drawNeedle(ctx, cx: cx, cy: cy,
                        angle: lonToAngle(ang.mc.longitude, rotForRing + bodyRot),
-                       length: rZodIn, width: R * 0.018, color: Color(hex: 0x3A3833), opacity: sweep, tail: rHub * 1.6)
-            drawNeedle(ctx, cx: cx, cy: cy, pt: pt,
+                       length: rZodIn * 0.84, baseW: R * 0.018, tailLen: rHub * 2.0,
+                       light: Color(hex: 0xDADCE1), dark: Color(hex: 0x76787F), opacity: sweep)
+            drawNeedle(ctx, cx: cx, cy: cy,
                        angle: lonToAngle(ang.asc.longitude, rotForRing + bodyRot),
-                       length: rZodIn, width: R * 0.024, color: oxblood, opacity: sweep, tail: rHub * 2.0)
+                       length: rZodIn * 1.02, baseW: R * 0.023, tailLen: rHub * 2.4,
+                       light: Color(hex: 0xCB5347), dark: Color(hex: 0x8A2820), opacity: sweep)
             // 축 라벨
             for (lon, label, col) in [(ang.asc.longitude, "ASC", oxblood), (ang.mc.longitude, "MC", Color(hex: 0x4A463E))] {
                 let a = lonToAngle(lon, rotForRing)
@@ -224,34 +226,61 @@ struct NatalDialChart: View {
             }
         }
 
-        // 12) 중앙 허브 — 메탈 캡 + 브라스 림 + 주얼
-        ctx.fill(disc(rHub + 2), with: .color(.black.opacity(0.25)))
-        ctx.fill(disc(rHub), with: .radialGradient(Gradient(colors: [Color(hex: 0x6A665E), Color(hex: 0x26241F)]),
-                                                   center: CGPoint(x: cx - rHub * 0.3, y: cy - rHub * 0.3),
-                                                   startRadius: 0, endRadius: rHub * 1.4))
-        ctx.stroke(disc(rHub), with: .color(brass.opacity(0.9)), lineWidth: 1.2)
-        ctx.fill(disc(rHub * 0.34), with: .color(oxblood.opacity(0.9 * sweep)))
+        // 12) 중앙 허브 — 입체 메탈 보스 (그림자 → 브라스 림 → 메탈 바디 → 라이즈드 탑 → 주얼)
+        ctx.fill(disc(rHub * 1.55), with: .color(.black.opacity(0.30)))
+        ctx.fill(disc(rHub * 1.38), with: .radialGradient(Gradient(colors: [Color(hex: 0xD8B673), Color(hex: 0x7C5E30)]),
+                                                          center: CGPoint(x: cx - rHub * 0.4, y: cy - rHub * 0.4),
+                                                          startRadius: 0, endRadius: rHub * 1.8))
+        ctx.fill(disc(rHub), with: .radialGradient(Gradient(colors: [Color(hex: 0x5A554D), Color(hex: 0x201E1A)]),
+                                                   center: CGPoint(x: cx - rHub * 0.35, y: cy - rHub * 0.35),
+                                                   startRadius: 0, endRadius: rHub * 1.5))
+        ctx.fill(disc(rHub * 0.62), with: .radialGradient(Gradient(colors: [Color(hex: 0x847D72), Color(hex: 0x322F2A)]),
+                                                          center: CGPoint(x: cx - rHub * 0.2, y: cy - rHub * 0.2),
+                                                          startRadius: 0, endRadius: rHub * 0.9))
+        ctx.fill(disc(rHub * 0.28), with: .color(oxblood))
+        ctx.fill(disc2(CGPoint(x: cx - rHub * 0.12, y: cy - rHub * 0.12), rHub * 0.08), with: .color(.white.opacity(0.7)))
     }
 
     private func disc2(_ c: CGPoint, _ r: CGFloat) -> Path {
         Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
     }
 
-    private func drawNeedle(_ ctx: GraphicsContext, cx: CGFloat, cy: CGFloat,
-                            pt: (Double, CGFloat) -> CGPoint, angle: Double,
-                            length: CGFloat, width: CGFloat, color: Color, opacity: Double, tail: CGFloat) {
-        let tip = pt(angle, length)
-        let baseL = pt(angle + 90, width)
-        let baseR = pt(angle - 90, width)
-        let tailEnd = pt(angle + 180, tail)
+    // 테이퍼드 글로시 워치핸드 — 뾰족한 끝 + 부풀린 몸통 + 둥근 카운터웨이트
+    private func drawNeedle(_ ctx0: GraphicsContext, cx: CGFloat, cy: CGFloat, angle: Double,
+                            length L: CGFloat, baseW w: CGFloat, tailLen: CGFloat,
+                            light: Color, dark: Color, opacity: Double) {
+        var ctx = ctx0
+        let rad = angle * .pi / 180
+        let dx = cos(rad), dy = -sin(rad)        // 끝 방향
+        let nx = -dy, ny = dx                     // 좌측 수직
+        func P(_ a: CGFloat, _ p: CGFloat) -> CGPoint {
+            CGPoint(x: cx + a * dx + p * nx, y: cy + a * dy + p * ny)
+        }
+
+        // 카운터웨이트 패들(뒤쪽 원)
+        ctx.fill(disc2(P(-tailLen * 0.6, 0), w * 1.7), with: .color(dark.opacity(opacity)))
+
+        // 랜스 몸통 (뾰족한 끝 → 부풀림 → 허브 → 꼬리)
         var p = Path()
-        p.move(to: tip); p.addLine(to: baseL); p.addLine(to: tailEnd); p.addLine(to: baseR); p.closeSubpath()
-        ctx.fill(p, with: .color(color.opacity(opacity)))
-        // 바늘 하이라이트
-        var hl = Path(); hl.move(to: tip); hl.addLine(to: cxcy(cx, cy))
-        ctx.stroke(hl, with: .color(.white.opacity(0.18 * opacity)), lineWidth: 0.7)
+        p.move(to: P(L, 0))
+        p.addLine(to: P(L * 0.80, w * 0.22))
+        p.addLine(to: P(L * 0.34, w))
+        p.addLine(to: P(0, w * 0.5))
+        p.addLine(to: P(-tailLen, 0))
+        p.addLine(to: P(0, -w * 0.5))
+        p.addLine(to: P(L * 0.34, -w))
+        p.addLine(to: P(L * 0.80, -w * 0.22))
+        p.closeSubpath()
+
+        let g = Gradient(colors: [light, dark])
+        ctx.fill(p, with: .linearGradient(g, startPoint: P(L * 0.35, w * 1.3),
+                                          endPoint: P(L * 0.35, -w * 1.3)))
+        ctx.opacity = opacity
+        // 스파인 하이라이트
+        var spine = Path(); spine.move(to: P(L * 0.92, 0)); spine.addLine(to: P(-tailLen * 0.5, 0))
+        ctx.stroke(spine, with: .color(.white.opacity(0.28)), lineWidth: 0.6)
+        ctx.opacity = 1
     }
-    private func cxcy(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
 
     private func aspectColor(_ type: String) -> Color {
         switch type {

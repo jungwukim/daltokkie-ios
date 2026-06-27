@@ -48,6 +48,16 @@ enum AIProxy {
             "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
             "birthMinute": birthMinute, "tone": tone,
         ]
+        // 현재 날짜·나이 앵커 — 없으면 서버 AI가 과거 연도(예: 2024)를 환각함
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let now = cal.dateComponents([.year, .month, .day], from: Date())
+        if let cy = now.year {
+            payload["currentYear"] = cy
+            payload["today"] = String(format: "%04d-%02d-%02d", cy, now.month ?? 1, now.day ?? 1)
+            payload["age"] = cy - birthYear            // 만 나이(근사)
+            payload["koreanAge"] = cy - birthYear + 1  // 세는 나이
+        }
         if let h = birthHour { payload["birthHour"] = h }
         if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
         if let n = natalChart { payload["natalChart"] = jsonValue(n) }

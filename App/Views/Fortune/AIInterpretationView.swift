@@ -206,6 +206,16 @@ struct FormattedAIText: View {
             if line.count >= 3, line.allSatisfy({ $0 == "-" || $0 == "*" || $0 == "_" }) {
                 result.append(.divider); continue
             }
+            // 마크다운 표 — 구분행(|---|)은 직전 헤더 제거, 데이터행은 비어있지 않은 셀을 " · "로
+            if line.hasPrefix("|") {
+                if line.dropFirst().allSatisfy({ "-:| ".contains($0) }) {
+                    if case .bullet = result.last { result.removeLast() }   // 헤더행 제거
+                    continue
+                }
+                let cells = line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                if !cells.isEmpty { result.append(.bullet(cells.joined(separator: " · "))) }
+                continue
+            }
             // 제목 (#, ##, ###…)
             if line.hasPrefix("#") {
                 var hashes = 0

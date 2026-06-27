@@ -77,7 +77,8 @@ struct HomeView: View {
                     natalDayStem: bundle.saju.raw.day.stem,
                     natalDayBranch: bundle.saju.raw.day.branch,
                     gender: bundle.saju.gender,
-                    birthYear: appState.profile?.year ?? 0
+                    birthYear: appState.profile?.year ?? 0,
+                    region: appState.profile?.region ?? "서울"
                 )
             }
         }
@@ -687,6 +688,7 @@ struct AILetterSheet: View {
     let natalDayBranch: String
     let gender: String
     let birthYear: Int
+    var region: String = "서울"
     @Environment(\.dismiss) private var dismiss
 
     private var sinsals: [String] {
@@ -712,7 +714,7 @@ struct AILetterSheet: View {
                     }
                     AIInterpretationView(title: "\(dayLabel)의 심층 편지") {
                         AIProxy.interpretDaily(day: day, weekday: weekday, sinsals: sinsals,
-                                               gender: gender, birthYear: birthYear)
+                                               gender: gender, birthYear: birthYear, region: region)
                     }
                 }
                 .padding(DT.pagePadding)

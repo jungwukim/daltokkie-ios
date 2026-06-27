@@ -130,6 +130,7 @@ struct TarotView: View {
 // MARK: - 리딩 화면 (push — 시스템 뒤로 버튼/스와이프 백)
 
 struct TarotReadingView: View {
+    @EnvironmentObject var appState: AppState
     let session: TarotSession
     @State private var flipped: Set<UUID> = []
 
@@ -171,7 +172,9 @@ struct TarotReadingView: View {
                                 ["name": d.card.name, "nameKo": d.card.nameKo, "isReversed": d.isReversed,
                                  "position": d.position, "keywords": d.isReversed ? d.card.keywordsReversed : d.card.keywords]
                             },
-                            spread: session.spread.rawValue, topic: session.topic, question: session.question)
+                            spread: session.spread.rawValue, topic: session.topic, question: session.question,
+                            gender: appState.profile?.gender, birthYear: appState.profile?.year,
+                            region: appState.profile?.region)
                     }
                 }
             }

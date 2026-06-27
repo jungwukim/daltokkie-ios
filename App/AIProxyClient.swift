@@ -16,52 +16,69 @@ enum AIProxy {
         (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(value))) ?? NSNull()
     }
 
+    /// 모든 AI 생성에 공통 주입할 컨텍스트 — 현재 날짜/나이/지역(없으면 서버가 과거 연도 환각·맥락 부족)
+    static func commonContext(birthYear: Int? = nil, region: String? = nil) -> [String: Any] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        let now = cal.dateComponents([.year, .month, .day], from: Date())
+        var ctx: [String: Any] = [:]
+        if let cy = now.year {
+            ctx["currentYear"] = cy
+            ctx["today"] = String(format: "%04d-%02d-%02d", cy, now.month ?? 1, now.day ?? 1)
+            if let by = birthYear { ctx["age"] = cy - by; ctx["koreanAge"] = cy - by + 1 }
+        }
+        if let r = region, !r.isEmpty { ctx["region"] = r }
+        return ctx
+    }
+
+    private static func merged(_ payload: [String: Any], _ ctx: [String: Any]) -> [String: Any] {
+        var p = payload
+        for (k, v) in ctx { p[k] = v }
+        return p
+    }
+
     /// 점성술 AI 해석 — POST /api/natal/interpret
-    static func interpretNatal(chart: NatalChart, gender: String, birthYear: Int) -> AsyncThrowingStream<String, Error> {
-        stream(path: "/api/natal/interpret", payload: ["chart": jsonValue(chart), "gender": gender, "birthYear": birthYear])
+    static func interpretNatal(chart: NatalChart, gender: String, birthYear: Int, region: String? = nil) -> AsyncThrowingStream<String, Error> {
+        stream(path: "/api/natal/interpret", payload: merged(
+            ["chart": jsonValue(chart), "gender": gender, "birthYear": birthYear],
+            commonContext(birthYear: birthYear, region: region)))
     }
 
     /// 자미두수 AI 해석 — POST /api/ziwei/interpret
-    static func interpretZiwei(chart: ZiweiChart, liunian: LiuNianInfo?, daxianList: [DaxianInfo], gender: String, birthYear: Int) -> AsyncThrowingStream<String, Error> {
-        stream(path: "/api/ziwei/interpret", payload: [
+    static func interpretZiwei(chart: ZiweiChart, liunian: LiuNianInfo?, daxianList: [DaxianInfo], gender: String, birthYear: Int, region: String? = nil) -> AsyncThrowingStream<String, Error> {
+        stream(path: "/api/ziwei/interpret", payload: merged([
             "chart": jsonValue(chart),
             "liunian": liunian.map { jsonValue($0) } ?? NSNull(),
             "daxianList": daxianList.map { jsonValue($0) },
             "gender": gender, "birthYear": birthYear,
-        ])
+        ], commonContext(birthYear: birthYear, region: region)))
     }
 
     /// 타로 AI 리딩 — POST /api/tarot/interpret
-    static func interpretTarot(cards: [[String: Any]], spread: String, topic: String, question: String?) -> AsyncThrowingStream<String, Error> {
+    static func interpretTarot(cards: [[String: Any]], spread: String, topic: String, question: String?,
+                               gender: String? = nil, birthYear: Int? = nil, region: String? = nil) -> AsyncThrowingStream<String, Error> {
         var payload: [String: Any] = ["cards": cards, "spread": spread, "topic": topic]
         if let q = question, !q.trimmingCharacters(in: .whitespaces).isEmpty { payload["question"] = q }
-        return stream(path: "/api/tarot/interpret", payload: payload)
+        if let g = gender { payload["gender"] = g }
+        if let by = birthYear { payload["birthYear"] = by }
+        return stream(path: "/api/tarot/interpret", payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
 
     /// AI 콘텐츠 — POST /api/saju/content/{id} (48종, 엔진 자동 라우팅)
     static func content(
         id: String, tone: String,
         gender: String, birthYear: Int, birthMonth: Int, birthDay: Int, birthHour: Int?, birthMinute: Int,
-        sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil
+        sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil, region: String? = nil
     ) -> AsyncThrowingStream<String, Error> {
         var payload: [String: Any] = [
             "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
             "birthMinute": birthMinute, "tone": tone,
         ]
-        // 현재 날짜·나이 앵커 — 없으면 서버 AI가 과거 연도(예: 2024)를 환각함
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        let now = cal.dateComponents([.year, .month, .day], from: Date())
-        if let cy = now.year {
-            payload["currentYear"] = cy
-            payload["today"] = String(format: "%04d-%02d-%02d", cy, now.month ?? 1, now.day ?? 1)
-            payload["age"] = cy - birthYear            // 만 나이(근사)
-            payload["koreanAge"] = cy - birthYear + 1  // 세는 나이
-        }
         if let h = birthHour { payload["birthHour"] = h }
         if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
         if let n = natalChart { payload["natalChart"] = jsonValue(n) }
-        return stream(path: "/api/saju/content/\(id)", payload: payload)
+        return stream(path: "/api/saju/content/\(id)",
+                      payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
 
     enum ProxyError: Error {
@@ -71,20 +88,20 @@ enum AIProxy {
     /// 사주 AI 해석 스트리밍 — POST /api/saju/interpret
     /// 반환: 텍스트 청크 AsyncStream
     static func interpretSaju(
-        result: FortuneTellerResult, gender: String, birthYear: Int
+        result: FortuneTellerResult, gender: String, birthYear: Int, region: String? = nil
     ) -> AsyncThrowingStream<String, Error> {
         let payload: [String: Any] = [
             "sajuResult": sajuResultJSON(result),
             "gender": gender,
             "birthYear": birthYear,
         ]
-        return stream(path: "/api/saju/interpret", payload: payload)
+        return stream(path: "/api/saju/interpret", payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
 
     /// 일일운세 AI 심층 편지 스트리밍 — POST /api/daily/interpret
     static func interpretDaily(
         day: DailyFortuneResult, weekday: String, sinsals: [String],
-        gender: String, birthYear: Int
+        gender: String, birthYear: Int, region: String? = nil
     ) -> AsyncThrowingStream<String, Error> {
         let conditions: [[String: Any]] = day.cards.map {
             ["name": $0.category, "score": $0.score, "grade": $0.grade]
@@ -108,7 +125,7 @@ enum AIProxy {
             "gender": gender,
             "birthYear": birthYear,
         ]
-        return stream(path: "/api/daily/interpret", payload: payload)
+        return stream(path: "/api/daily/interpret", payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }
 
     /// 공용 스트리밍 POST

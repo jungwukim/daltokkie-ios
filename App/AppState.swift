@@ -99,6 +99,17 @@ final class AppState: ObservableObject {
         return bundle
     }
 
+    /// 프로필 생년월일을 양력으로 — 음력 입력이면 양력 변환(사주와 동일 LegacyLunarConverter).
+    /// 점성/자미 엔진은 양력 입력을 기대하므로 음력 프로필은 반드시 선변환해야 함.
+    private func solarBirth(_ p: UserProfile) -> (year: Int, month: Int, day: Int) {
+        if p.calendar == "lunar",
+           let s = try? LegacyLunarConverter.lunarToSolar(
+               year: p.year, month: p.month, day: p.day, isLeapMonth: p.isLeapMonth) {
+            return (s.year, s.month, s.day)
+        }
+        return (p.year, p.month, p.day)
+    }
+
     // MARK: - 점성술
 
     @discardableResult
@@ -107,8 +118,9 @@ final class AppState: ObservableObject {
         guard let p = profile else { return nil }
         do {
             let geo = RegionCoords.coords(for: p.region)
+            let s = solarBirth(p)
             let chart = try NatalEngine.calculateNatal(NatalInput(
-                year: p.year, month: p.month, day: p.day,
+                year: s.year, month: s.month, day: s.day,
                 hour: p.hour ?? 12, minute: p.minute,
                 latitude: geo.lat, longitude: geo.lon,
                 unknownTime: p.hour == nil,
@@ -129,8 +141,9 @@ final class AppState: ObservableObject {
         if let cached = ziweiChart { return cached }
         guard let p = profile else { return nil }
         do {
+            let s = solarBirth(p)
             let chart = try ZiweiEngine.createChart(
-                year: p.year, month: p.month, day: p.day,
+                year: s.year, month: s.month, day: s.day,
                 hour: p.hour ?? 12, minute: p.minute,
                 isMale: p.gender == "male"
             )

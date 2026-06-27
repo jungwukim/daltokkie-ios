@@ -469,15 +469,11 @@ struct ZiweiDetailView: View {
                     Text("紫微斗數 명반")
                         .font(DT.serif(16, .bold)).tracking(1).foregroundStyle(Color(hex: 0xF1E9DA))
                     Spacer()
-                    Text("ASTRA").font(.system(size: 10, weight: .heavy)).tracking(3)
-                        .foregroundStyle(Color(hex: 0xB8975A))
                 }
-                // 명반 그리드 — 브라스 프레임
+                // 명반 그리드 — 얇은 브라스 프레임
                 ZiweiGridChart(chart: chart, daxian: appState.ziweiDaxian, palaceKo: palaceKo)
-                    .padding(3)
-                    .background(Color(hex: 0x0E0D0B))
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: 0xB8975A).opacity(0.55), lineWidth: 1.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: 0xB8975A).opacity(0.5), lineWidth: 1))
                 HStack(spacing: 10) {
                     DarkStatChip(value: mingStars.isEmpty ? "—" : mingStars, label: "명궁 주성")
                     DarkStatChip(value: chart.wuXingJu.name, label: "오행국")

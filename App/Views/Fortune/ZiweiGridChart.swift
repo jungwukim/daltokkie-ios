@@ -27,10 +27,6 @@ struct ZiweiGridChart: View {
     private let brassSoft = Color(hex: 0x8C6E3C)
     private let insInk  = Color(hex: 0x2C2620)
     private let insInkSoft = Color(hex: 0x6E5C3C)
-    private let plateHi = Color(hex: 0x2A2723)
-    private let plateLo = Color(hex: 0x141310)
-    private let champagne = Color(hex: 0xCBAE72)
-    private let plateText = Color(hex: 0xCFC4AC)
 
     private func palace(_ zhi: String) -> ZiweiPalace? {
         chart.palaces.values.first { $0.zhi == zhi }
@@ -40,24 +36,22 @@ struct ZiweiGridChart: View {
         return "\(d.ageStart)–\(d.ageEnd)"
     }
 
-    // 밝기 색상
+    // 밝기 색상 — 깊고 차분한 톤(네온 배제)으로 절제
     private func brightnessColor(_ b: String) -> Color {
         switch b {
-        case "廟": return dtDyn(0xD97706, 0xECA13C)
-        case "旺": return dtDyn(0xEA580C, 0xF0884C)
-        case "得": return dtDyn(0x0284C7, 0x3FA9E0)
-        case "利": return dtDyn(0x0D9488, 0x3CC0B2)
-        case "陷": return dtDyn(0xE11D48, 0xF06080)
-        default:   return dtDyn(0x8B8378, 0xA89C8C)   // 平·기타
+        case "廟", "旺": return Color(hex: 0xB07D2E)   // 강 — 깊은 골드
+        case "得", "利": return Color(hex: 0x3C6E82)   // 중 — 머스키 블루
+        case "陷":       return Color(hex: 0xA8455A)   // 약 — 깊은 로즈
+        default:         return Color(hex: 0x9A9082)   // 平·기타
         }
     }
-    // 사화 배지 색
-    private func siHuaColors(_ s: String) -> (bg: Color, fg: Color)? {
+    // 사화 — 파스텔 배지 대신 텍스트 색만(절제)
+    private func siHuaColor(_ s: String) -> Color? {
         switch s {
-        case "化祿": return (Color(hex: 0xD1FAE5), Color(hex: 0x047857))
-        case "化權": return (Color(hex: 0xFFE4E6), Color(hex: 0xBE123C))
-        case "化科": return (Color(hex: 0xEDE9FE), Color(hex: 0x6D28D9))
-        case "化忌": return (Color(hex: 0xE2E8F0), Color(hex: 0x334155))
+        case "化祿": return Color(hex: 0x3E7D54)
+        case "化權": return Color(hex: 0xA83F4E)
+        case "化科": return Color(hex: 0x5A5AA0)
+        case "化忌": return Color(hex: 0x6A6E74)
         default: return nil
         }
     }
@@ -108,11 +102,9 @@ struct ZiweiGridChart: View {
                             Text(star.brightness).font(DT.sans(8.5, .bold))
                                 .foregroundStyle(brightnessColor(star.brightness))
                         }
-                        if let c = siHuaColors(star.siHua) {
-                            Text(star.siHua).font(DT.sans(7, .bold))
-                                .foregroundStyle(c.fg)
-                                .padding(.horizontal, 2).padding(.vertical, 0.5)
-                                .background(c.bg).clipShape(RoundedRectangle(cornerRadius: 3))
+                        if let c = siHuaColor(star.siHua) {
+                            Text(star.siHua.replacingOccurrences(of: "化", with: ""))
+                                .font(DT.sans(8, .bold)).foregroundStyle(c)
                         }
                     }
                 }
@@ -133,23 +125,22 @@ struct ZiweiGridChart: View {
 
     private var centerInfo: some View {
         VStack(spacing: 5) {
-            Text("紫微斗數").font(DT.serif(15, .bold)).tracking(2).foregroundStyle(champagne)
-            Rectangle().fill(brass.opacity(0.6)).frame(width: 56, height: 0.8)
+            Text("紫微斗數").font(DT.serif(15, .bold)).tracking(2).foregroundStyle(brassSoft)
+            Rectangle().fill(brass.opacity(0.5)).frame(width: 52, height: 0.8)
             VStack(spacing: 2) {
                 Text("\(chart.solarYear)년 \(chart.solarMonth)월 \(chart.solarDay)일 \(String(format: "%02d:%02d", chart.hour, chart.minute))")
-                Text("음력 \(chart.lunarYear).\(chart.isLeapMonth ? "윤" : "")\(chart.lunarMonth).\(chart.lunarDay)")
                 Text("\(chart.isMale ? "남" : "여") · \(chart.yearGan)\(chart.yearZhi)년")
                 Text("명궁 \(chart.mingGongZhi) · 신궁 \(chart.shenGongZhi)")
-                Text(chart.wuXingJu.name).foregroundStyle(champagne.opacity(0.9))
+                Text(chart.wuXingJu.name).foregroundStyle(brassSoft)
             }
             .font(DT.sans(9))
-            .foregroundStyle(plateText)
+            .foregroundStyle(insInkSoft)
             .multilineTextAlignment(.center)
         }
         .padding(6)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(LinearGradient(colors: [plateHi, plateLo], startPoint: .top, endPoint: .bottom))
-        .overlay(Rectangle().stroke(brass.opacity(0.5), lineWidth: 1))
+        .background(LinearGradient(colors: [ivoryHi, ivoryLo], startPoint: .top, endPoint: .bottom))
+        .overlay(Rectangle().stroke(brass.opacity(0.42), lineWidth: 0.7))
     }
 
     private func badge(_ t: String, _ bg: Color, _ fg: Color) -> some View {

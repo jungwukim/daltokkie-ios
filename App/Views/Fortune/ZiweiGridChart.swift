@@ -128,7 +128,10 @@ struct ZiweiGridChart: View {
             Text("紫微斗數").font(DT.serif(15, .bold)).tracking(2).foregroundStyle(brassSoft)
             Rectangle().fill(brass.opacity(0.5)).frame(width: 52, height: 0.8)
             VStack(spacing: 2) {
-                Text("\(chart.solarYear)년 \(chart.solarMonth)월 \(chart.solarDay)일 \(String(format: "%02d:%02d", chart.hour, chart.minute))")
+                // 자미두수는 음력 기반 — 음력 우선, 양력은 참고. String()으로 연도 천단위 콤마 방지
+                Text("음력 \(String(chart.lunarYear)).\(chart.isLeapMonth ? "윤" : "")\(chart.lunarMonth).\(chart.lunarDay)  \(String(format: "%02d:%02d", chart.hour, chart.minute))")
+                Text("양력 \(String(chart.solarYear)).\(chart.solarMonth).\(chart.solarDay)")
+                    .foregroundStyle(insInkSoft.opacity(0.7))
                 Text("\(chart.isMale ? "남" : "여") · \(chart.yearGan)\(chart.yearZhi)년")
                 Text("명궁 \(chart.mingGongZhi) · 신궁 \(chart.shenGongZhi)")
                 Text(chart.wuXingJu.name).foregroundStyle(brassSoft)

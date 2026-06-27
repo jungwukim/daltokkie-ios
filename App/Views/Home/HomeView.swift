@@ -23,6 +23,7 @@ struct HomeView: View {
     @State private var showLuckyItemsDetail = false
     @State private var showConditionsDetail = false
     @State private var showAILetter = false
+    @State private var showCalendar = false
     @State private var aiDay: DailyFortuneResult?
     private let heroHeight: CGFloat = 282
 
@@ -64,6 +65,9 @@ struct HomeView: View {
             if showCtaBanner, let bundle {
                 floatingCtaBanner(bundle)
             }
+        }
+        .fullScreenCover(isPresented: $showCalendar) {
+            FortuneCalendarView().environmentObject(appState)
         }
         .sheet(isPresented: $showLuckyDetail) {
             if let bundle { LuckyIndexDetailView(bundle: bundle) }
@@ -115,9 +119,11 @@ struct HomeView: View {
                             .clipShape(Circle())
                             .offset(x: 7, y: -7)
                     }
-                    Image(systemName: "calendar")
-                        .font(.system(size: 21, weight: .light))
-                        .foregroundStyle(DT.ink)
+                    Button { showCalendar = true } label: {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 21, weight: .light))
+                            .foregroundStyle(DT.ink)
+                    }
                 }
             }
         }

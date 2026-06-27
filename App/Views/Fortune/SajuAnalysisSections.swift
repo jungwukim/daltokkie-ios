@@ -343,12 +343,23 @@ struct MonthlyFortuneCalendar: View {
     let month: Int
     let today: Int
     let lead: Int
+    var showHeader: Bool = true
     @State private var selected: Int?
+    @State private var showFull = false
 
     var body: some View {
         CraftCard {
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "\(year)년 \(month)월 운세 달력")
+                if showHeader {
+                    HStack {
+                        SectionTitle(text: "\(year)년 \(month)월 운세 달력")
+                        Spacer()
+                        Button { showFull = true } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 13, weight: .semibold)).foregroundStyle(DT.accent)
+                        }
+                    }
+                }
                 let cols = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
                 LazyVGrid(columns: cols, spacing: 3) {
                     ForEach(Array(["일","월","화","수","목","금","토"].enumerated()), id: \.offset) { i, w in
@@ -366,6 +377,7 @@ struct MonthlyFortuneCalendar: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showFull) { FortuneCalendarView() }
     }
 
     private func cell(_ d: MonthlyCalendarDay) -> some View {
@@ -453,5 +465,95 @@ struct MonthlyFortuneCalendar: View {
         let tail = score >= 65 ? " 흐름이 좋으니 적극적으로 움직여 봐요."
                  : (score >= 40 ? " 평소 리듬을 지키면 충분해요." : " 무리하지 말고 충전하는 날로 삼아요.")
         return base + tail
+    }
+}
+
+// MARK: - 운세 달력 전체 화면 (월 전환 + 그날의 기운)
+
+struct FortuneCalendarView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State private var year: Int
+    @State private var month: Int
+
+    init() {
+        let now = Date()
+        _year = State(initialValue: Calendar.current.component(.year, from: now))
+        _month = State(initialValue: Calendar.current.component(.month, from: now))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if let r = appState.ensureSaju() {
+                    let days = DailyFortuneEngine.calculateMonthlyCalendar(
+                        year: year, month: month,
+                        dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang,
+                        dayMasterHanja: r.dayMaster.hanja, birthYear: appState.profile?.year ?? year)
+                    let comp = DateComponents(year: year, month: month, day: 1)
+                    let firstWd = Calendar.current.date(from: comp).map { Calendar.current.component(.weekday, from: $0) } ?? 1
+                    let lead = firstWd - 1
+                    let now = Date()
+                    let isCurMonth = year == Calendar.current.component(.year, from: now)
+                        && month == Calendar.current.component(.month, from: now)
+                    let today = isCurMonth ? Calendar.current.component(.day, from: now) : -1
+
+                    VStack(spacing: 16) {
+                        monthSwitcher
+                        MonthlyFortuneCalendar(days: days, year: year, month: month,
+                                               today: today, lead: lead, showHeader: false)
+                            .id("\(year)-\(month)")   // 월 전환 시 선택 초기화
+                        legend
+                    }
+                    .padding(.horizontal, DT.pagePadding)
+                    .padding(.vertical, 12)
+                } else {
+                    ContentUnavailableView("사주 정보가 필요해요", systemImage: "calendar",
+                                           description: Text("생년월일을 먼저 입력해 주세요."))
+                        .padding(.top, 60)
+                }
+            }
+            .background(DT.bg)
+            .navigationTitle("운세 달력")
+            .navigationBarTitleDisplayMode(.inline)
+            .dtCloseToolbar { dismiss() }
+        }
+    }
+
+    private var monthSwitcher: some View {
+        HStack {
+            Button { shift(-1) } label: {
+                Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(DT.ink).frame(width: 44, height: 38)
+            }
+            Spacer()
+            Text("\(String(year))년 \(month)월").font(DT.serif(18, .bold)).foregroundStyle(DT.ink)
+            Spacer()
+            Button { shift(1) } label: {
+                Image(systemName: "chevron.right").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(DT.ink).frame(width: 44, height: 38)
+            }
+        }
+    }
+
+    private var legend: some View {
+        HStack(spacing: 14) {
+            legendDot(dtDyn(0x5A9E6F, 0x7FC093), "좋음")
+            legendDot(dtDyn(0xE0B450, 0xEBC873), "보통")
+            legendDot(DT.accent, "주의")
+            legendDot(dtDyn(0xB0A088, 0x8E826E), "휴식")
+        }
+        .font(DT.sans(10)).foregroundStyle(DT.inkSoft)
+        .frame(maxWidth: .infinity)
+    }
+    private func legendDot(_ c: Color, _ t: String) -> some View {
+        HStack(spacing: 3) { Circle().fill(c).frame(width: 6, height: 6); Text(t) }
+    }
+
+    private func shift(_ d: Int) {
+        var m = month + d, y = year
+        if m < 1 { m = 12; y -= 1 }
+        if m > 12 { m = 1; y += 1 }
+        month = m; year = y
     }
 }

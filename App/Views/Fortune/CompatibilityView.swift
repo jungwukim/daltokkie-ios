@@ -10,6 +10,9 @@ struct CompatibilityView: View {
     @State private var year2 = 1995
     @State private var month2 = 6
     @State private var day2 = 15
+    @State private var knowsTime2 = false
+    @State private var hour2 = 12
+    @State private var minute2 = 0
     @State private var gender2 = "male"
     @State private var partner: FortuneTellerResult?
     @State private var errorText: String?
@@ -18,33 +21,60 @@ struct CompatibilityView: View {
         ScrollView {
             VStack(spacing: 16) {
                 CraftCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        SectionTitle(text: "상대방 정보")
-                        Picker("", selection: $gender2) {
-                            Text("여성").tag("female")
-                            Text("남성").tag("male")
+                    VStack(alignment: .leading, spacing: 16) {
+                        pairHeader
+
+                        Divider().overlay(DT.line)
+
+                        Text("상대방 정보")
+                            .font(DT.serif(15, .bold)).foregroundStyle(DT.ink)
+
+                        field("성별") {
+                            Picker("", selection: $gender2) {
+                                Text("여성").tag("female")
+                                Text("남성").tag("male")
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
-                        HStack {
-                            Picker("년", selection: $year2) {
-                                ForEach(Array((1920...2025).reversed()), id: \.self) { Text("\(String($0))년").tag($0) }
+
+                        field("생년월일 (양력)") {
+                            HStack {
+                                Picker("년", selection: $year2) {
+                                    ForEach(Array((1920...2025).reversed()), id: \.self) { Text("\(String($0))년").tag($0) }
+                                }
+                                Picker("월", selection: $month2) {
+                                    ForEach(1...12, id: \.self) { Text("\($0)월").tag($0) }
+                                }
+                                Picker("일", selection: $day2) {
+                                    ForEach(1...31, id: \.self) { Text("\($0)일").tag($0) }
+                                }
                             }
-                            Picker("월", selection: $month2) {
-                                ForEach(1...12, id: \.self) { Text("\($0)월").tag($0) }
-                            }
-                            Picker("일", selection: $day2) {
-                                ForEach(1...31, id: \.self) { Text("\($0)일").tag($0) }
+                            .pickerStyle(.menu).tint(DT.ink)
+                        }
+
+                        Toggle("상대 태어난 시간을 알아요", isOn: $knowsTime2)
+                            .font(DT.sans(14)).tint(DT.accent)
+                        if knowsTime2 {
+                            field("태어난 시간") {
+                                HStack {
+                                    Picker("시", selection: $hour2) {
+                                        ForEach(0...23, id: \.self) { Text(String(format: "%02d시", $0)).tag($0) }
+                                    }
+                                    Picker("분", selection: $minute2) {
+                                        ForEach(0...59, id: \.self) { Text(String(format: "%02d분", $0)).tag($0) }
+                                    }
+                                }
+                                .pickerStyle(.menu).tint(DT.ink)
                             }
                         }
-                        .pickerStyle(.menu)
-                        .tint(DT.ink)
 
                         Button { calculate() } label: {
                             Text("궁합 보기")
                                 .font(DT.sans(15, .bold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .frame(maxWidth: .infinity).padding(.vertical, 13)
                                 .background(DT.accent).clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .padding(.top, 2)
                     }
                 }
 
@@ -149,11 +179,55 @@ struct CompatibilityView: View {
         }
     }
 
+    // MARK: 나 ↔ 상대 헤더 + 입력 헬퍼
+
+    private var meInfo: (name: String, date: String, saju: String) {
+        guard let p = appState.profile else { return ("나", "-", "") }
+        let date = "\(p.calendar == "lunar" ? "음력 " : "")\(p.year).\(p.month).\(p.day)"
+        var saju = ""
+        if let s = appState.ensureSaju() { saju = "\(s.dayMaster.hanja) · \(animalKo(s.animal))띠" }
+        return (p.name.isEmpty ? "나" : p.name, date, saju)
+    }
+
+    private var pairHeader: some View {
+        let me = meInfo
+        return HStack(spacing: 10) {
+            personMini(title: "나", main: me.name, date: me.date, saju: me.saju, accent: true)
+            Image(systemName: "heart.fill").font(.system(size: 16)).foregroundStyle(DT.accent)
+            personMini(title: "상대", main: gender2 == "male" ? "남성" : "여성",
+                       date: "\(year2).\(month2).\(day2)",
+                       saju: partner.map { "\($0.dayMaster.hanja) · \(animalKo($0.animal))띠" } ?? "입력 후 계산",
+                       accent: false)
+        }
+    }
+
+    private func personMini(title: String, main: String, date: String, saju: String, accent: Bool) -> some View {
+        VStack(spacing: 3) {
+            Text(title).font(DT.sans(11, .bold)).foregroundStyle(DT.accent)
+            Text(main).font(DT.sans(13, .semibold)).foregroundStyle(DT.ink).lineLimit(1).minimumScaleFactor(0.7)
+            Text(date).font(DT.sans(11)).foregroundStyle(DT.inkSoft).lineLimit(1).minimumScaleFactor(0.7)
+            if !saju.isEmpty {
+                Text(saju).font(DT.sans(11)).foregroundStyle(accent ? DT.accent : DT.inkSoft)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 12).padding(.horizontal, 6)
+        .background(DT.bg).clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func field<C: View>(_ label: String, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(DT.sans(12, .semibold)).foregroundStyle(DT.inkSoft)
+            content()
+        }
+    }
+
     private func calculate() {
         do {
             partner = try SajuCalculator.calculate(
-                year: year2, month: month2, day: day2, hour: nil, gender: gender2,
-                calendar: "solar", isLeapMonth: false, useTrueSolarTime: false, region: "서울", minute: 0)
+                year: year2, month: month2, day: day2, hour: knowsTime2 ? hour2 : nil, gender: gender2,
+                calendar: "solar", isLeapMonth: false, useTrueSolarTime: false, region: "서울",
+                minute: knowsTime2 ? minute2 : 0)
             errorText = nil
         } catch { errorText = "계산 실패: \(error)" }
     }

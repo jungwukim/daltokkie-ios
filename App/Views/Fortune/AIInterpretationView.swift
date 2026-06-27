@@ -334,9 +334,15 @@ import SajuKit
 struct PillarGrid: View {
     let result: FortuneTellerResult
     var onDark: Bool = false
+    /// 인스트루먼트 톤(아이보리 타일 + 잉크 한자 + 원소색 점 + 브라스 보더) — 출생차트/명반과 통일
+    var instrument: Bool = false
+
+    private let insInk = Color(hex: 0x2C2620)
+    private let insInkSoft = Color(hex: 0x6E5C3C)
+    private let brass = Color(hex: 0xB8975A)
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: instrument ? 6 : 8) {
             pillarColumn("시주", result.pillars.hour)
             pillarColumn("일주", result.pillars.day)
             pillarColumn("월주", result.pillars.month)
@@ -344,37 +350,47 @@ struct PillarGrid: View {
         }
     }
 
-    private var titleColor: Color { onDark ? .white.opacity(0.6) : DT.inkSoft }
-    private var koreanColor: Color { onDark ? .white.opacity(0.6) : DT.inkSoft }
-    private var cellBg: Color { onDark ? .white.opacity(0.07) : DT.bg }
+    private var titleColor: Color { instrument ? insInkSoft : (onDark ? .white.opacity(0.6) : DT.inkSoft) }
+    private var koreanColor: Color { instrument ? insInkSoft : (onDark ? .white.opacity(0.6) : DT.inkSoft) }
+    private var hanjaColor: Color { instrument ? insInk : (onDark ? .white : DT.ink) }
 
+    @ViewBuilder
     private func pillarColumn(_ title: String, _ pillar: UIPillar?) -> some View {
-        VStack(spacing: 6) {
-            Text(title)
-                .font(DT.sans(11))
-                .foregroundStyle(titleColor)
+        VStack(spacing: 5) {
+            Text(title).font(DT.sans(11)).foregroundStyle(titleColor)
             if let p = pillar {
-                Text(p.stem.hanja)
-                    .font(DT.serif(30, .bold))
-                    .foregroundStyle(onDark ? sajuElementColor(p.stem.element) : DT.ink)
-                Text(p.branch.hanja)
-                    .font(DT.serif(30, .bold))
-                    .foregroundStyle(onDark ? sajuElementColor(p.branch.element) : DT.ink)
-                Text("\(p.stem.korean)\(p.branch.korean)")
-                    .font(DT.sans(11))
-                    .foregroundStyle(koreanColor)
+                Text(p.stem.hanja).font(DT.serif(30, .bold))
+                    .foregroundStyle(instrument ? insInk : (onDark ? sajuElementColor(p.stem.element) : DT.ink))
+                Text(p.branch.hanja).font(DT.serif(30, .bold))
+                    .foregroundStyle(instrument ? insInk : (onDark ? sajuElementColor(p.branch.element) : DT.ink))
+                if instrument {
+                    HStack(spacing: 3) {
+                        Circle().fill(sajuElementColor(p.stem.element)).frame(width: 5, height: 5)
+                        Text("\(p.stem.korean)\(p.branch.korean)").font(DT.sans(10)).foregroundStyle(insInkSoft)
+                        Circle().fill(sajuElementColor(p.branch.element)).frame(width: 5, height: 5)
+                    }
+                } else {
+                    Text("\(p.stem.korean)\(p.branch.korean)").font(DT.sans(11)).foregroundStyle(koreanColor)
+                }
             } else {
-                Text("?")
-                    .font(DT.serif(30, .bold))
-                    .foregroundStyle((onDark ? Color.white : DT.inkSoft).opacity(0.5))
-                Text("미상")
-                    .font(DT.sans(11))
-                    .foregroundStyle(koreanColor)
+                Text("?").font(DT.serif(30, .bold))
+                    .foregroundStyle((instrument || !onDark ? DT.inkSoft : Color.white).opacity(0.5))
+                Text("미상").font(DT.sans(11)).foregroundStyle(koreanColor)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(cellBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(pillarBg)
+        .clipShape(RoundedRectangle(cornerRadius: instrument ? 8 : 12))
+        .overlay(instrument ? RoundedRectangle(cornerRadius: 8).stroke(brass.opacity(0.42), lineWidth: 0.8) : nil)
+    }
+
+    @ViewBuilder
+    private var pillarBg: some View {
+        if instrument {
+            LinearGradient(colors: [Color(hex: 0xF8F2E6), Color(hex: 0xE7DBC2)], startPoint: .top, endPoint: .bottom)
+        } else {
+            (onDark ? Color.white.opacity(0.07) : DT.bg)
+        }
     }
 }

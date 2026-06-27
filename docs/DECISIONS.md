@@ -189,6 +189,14 @@
 **관련 파일**: `App/AppState.swift`(`ensureHeroLines`/캐시/`parseHeroLine`), `App/AIProxyClient.swift`(`style`), `App/Views/Home/HomeView.swift`, `App/Views/Home/MoonLetter.swift`(규칙 폴백), saju-api `app/api/daily/interpret/route.ts`(oneline, 커밋 a2b3d4a)
 **관련**: DEC-015(AI 심층 편지 — 전체 편지는 ✨탭 유지)
 
+### DEC-018: 사주 상세 일목요연화 — 명식표 + 신살·길성 표 (2026-06-27)
+
+**결정**: 흩어져 있던 사주 분석 카드를 두 개의 기둥별 표로 통합. ① 명식표(천간·십성·지지·십성·지장간·12운성·12신살을 시·일·월·년 4열로) ② 신살과 길성 표(요약 줄 + 기둥별 귀속, 길흉 색 구분). 만세력 참고 이미지의 정보 구조만 차용하고 디자인은 달토끼 톤
+**근거**: 사용자 피드백("사주 페이지가 너무 어렵다 → 일목요연하게"). 엔진이 이미 기둥별 귀속(12신살 `.pillar`, 특수살 `.pillarIndices`, 십성/운성/지장간 per pillar)을 제공 → 표로 재구성만 하면 됨(추가 계산 불필요)
+**대안 검토**: ① 참고 이미지를 천간/지지 신살 분리까지 그대로 복제 — 특수살의 천간/지지 축을 엔진이 명시하지 않아 부정확 위험으로 반려(기둥 단위 통합으로 대체) ② 기존 나열식 유지 — 가독성 낮아 반려
+**관련 파일**: `App/Views/Fortune/SajuDetailView.swift`(`SajuChartTable`/`SajuColumn`/`makeChartColumns`), `App/Views/Fortune/SajuAnalysisSections.swift`(`sinsalCard` 표 재작성)
+**관련**: DEC-016(사주 상세 온디바이스 이관), 십성 배치표·12운성·신살 나열 카드 제거
+
 ---
 
 ## 결정 템플릿

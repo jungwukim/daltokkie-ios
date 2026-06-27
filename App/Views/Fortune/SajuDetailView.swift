@@ -18,11 +18,22 @@ struct SajuDetailView: View {
                 )
                 let tenGods = EngineAnalysis.calculateTenGods(dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang, pillars: pillars)
                 let stages = EngineAnalysis.calculateTwelveStages(dayMasterHanja: r.dayMaster.hanja, pillars: pillars)
+                let hidden = EngineAnalysis.calculateHiddenStems(pillars: pillars, dayMasterElement: r.dayMaster.element, dayMasterYinYang: r.dayMaster.yin_yang)
+                let spirits = EngineAnalysis.calculateTwelveSpirits(yearBranchHanja: r.pillars.year.branch.hanja, pillars: pillars)
                 let daeun = HoshinDaeUn.calculateDaeUn(r.raw)
+                let chartColumns = makeChartColumns(r: r, tenGods: tenGods, stages: stages, hidden: hidden, spirits: spirits)
 
                 VStack(spacing: 16) {
                     // 밤하늘 히어로: 일간 정체성 + 사주팔자 + 핵심 요약
                     sajuHero(r)
+
+                    // 명식표(만세력) — 천간·십성·지지·십성·지장간·12운성·12신살 한눈에
+                    CraftCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionTitle(text: "명식표(命式表)")
+                            SajuChartTable(columns: chartColumns)
+                        }
+                    }
 
                     // 오행 분포
                     SajuAnalysisSections(r: r, pillars: pillars, phase: .elements)
@@ -39,26 +50,6 @@ struct SajuDetailView: View {
                                     .foregroundStyle(DT.inkSoft)
                                     .lineSpacing(4)
                             }
-                        }
-                    }
-
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SectionTitle(text: "십성(十神) 배치표")
-                            tenGodRow("년주", tenGods.year.stem, tenGods.year.branch)
-                            tenGodRow("월주", tenGods.month.stem, tenGods.month.branch)
-                            tenGodRow("일주", tenGods.day.stem, tenGods.day.branch)
-                            if let h = tenGods.hour { tenGodRow("시주", h.stem, h.branch) }
-                        }
-                    }
-
-                    CraftCard {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SectionTitle(text: "12운성")
-                            stageRow("년주", stages.year.stage, stages.year.period)
-                            stageRow("월주", stages.month.stage, stages.month.period)
-                            stageRow("일주", stages.day.stage, stages.day.period)
-                            if let h = stages.hour { stageRow("시주", h.stage, h.period) }
                         }
                     }
 
@@ -198,36 +189,28 @@ struct SajuDetailView: View {
         .overlay(RoundedRectangle(cornerRadius: DT.radius).stroke(Color(hex: 0xB8975A).opacity(0.30), lineWidth: 1))
     }
 
-    private func tenGodRow(_ title: String, _ stemGod: String, _ branchGod: String) -> some View {
-        HStack {
-            Text(title)
-                .font(DT.sans(12))
-                .foregroundStyle(DT.inkSoft)
-                .frame(width: 44, alignment: .leading)
-            Text("천간 \(stemGod)")
-                .font(DT.sans(12, .medium))
-                .foregroundStyle(DT.ink)
-            Spacer()
-            Text("지지 \(branchGod)")
-                .font(DT.sans(12, .medium))
-                .foregroundStyle(DT.ink)
-        }
-    }
-
-    private func stageRow(_ title: String, _ stage: String, _ period: String) -> some View {
-        HStack {
-            Text(title)
-                .font(DT.sans(12))
-                .foregroundStyle(DT.inkSoft)
-                .frame(width: 44, alignment: .leading)
-            Text(stage)
-                .font(DT.sans(13, .bold))
-                .foregroundStyle(DT.accent)
-            Spacer()
-            Text(period)
-                .font(DT.sans(11))
-                .foregroundStyle(DT.inkSoft)
-        }
+    /// 명식표 컬럼 조립 (시 → 일 → 월 → 년 순)
+    private func makeChartColumns(
+        r: FortuneTellerResult,
+        tenGods: TenGodChart, stages: TwelveStageChart,
+        hidden: HiddenStemsChart, spirits: [TwelveSpiritEntry]
+    ) -> [SajuColumn] {
+        func sinsal(_ key: String) -> String { spirits.first { $0.pillar == key }?.spiritHangul ?? "—" }
+        func hid(_ list: [HiddenStem]) -> String { list.isEmpty ? "—" : list.map { $0.stem }.joined() }
+        return [
+            SajuColumn(header: "생시", stem: r.pillars.hour?.stem, branch: r.pillars.hour?.branch,
+                       tenGodStem: tenGods.hour?.stem ?? "—", tenGodBranch: tenGods.hour?.branch ?? "—",
+                       hidden: hid(hidden.hour ?? []), stage: stages.hour?.stage ?? "—", sinsal: sinsal("시주")),
+            SajuColumn(header: "생일", stem: r.pillars.day.stem, branch: r.pillars.day.branch,
+                       tenGodStem: tenGods.day.stem, tenGodBranch: tenGods.day.branch,
+                       hidden: hid(hidden.day), stage: stages.day.stage, sinsal: sinsal("일주"), isDayMaster: true),
+            SajuColumn(header: "생월", stem: r.pillars.month.stem, branch: r.pillars.month.branch,
+                       tenGodStem: tenGods.month.stem, tenGodBranch: tenGods.month.branch,
+                       hidden: hid(hidden.month), stage: stages.month.stage, sinsal: sinsal("월주")),
+            SajuColumn(header: "생년", stem: r.pillars.year.stem, branch: r.pillars.year.branch,
+                       tenGodStem: tenGods.year.stem, tenGodBranch: tenGods.year.branch,
+                       hidden: hid(hidden.year), stage: stages.year.stage, sinsal: sinsal("년주")),
+        ]
     }
 
     private func stemHanja(_ korean: String) -> String {
@@ -235,5 +218,120 @@ struct SajuDetailView: View {
     }
     private func branchHanja(_ korean: String) -> String {
         SajuTables.branches.first { $0.korean == korean }?.hanja ?? korean
+    }
+}
+
+// MARK: - 명식표(만세력) — 4기둥 통합표
+
+struct SajuColumn: Identifiable {
+    let id = UUID()
+    let header: String          // 생시/생일/생월/생년
+    let stem: UIStem?
+    let branch: UIBranch?
+    let tenGodStem: String
+    let tenGodBranch: String
+    let hidden: String          // 지장간(한자 연결)
+    let stage: String           // 12운성
+    let sinsal: String          // 12신살
+    var isDayMaster: Bool = false
+}
+
+/// 천간·십성·지지·십성·지장간·12운성·12신살을 시·일·월·년 4열로 정리한 만세력 표
+struct SajuChartTable: View {
+    let columns: [SajuColumn]
+    private let labelW: CGFloat = 48
+
+    var body: some View {
+        VStack(spacing: 0) {
+            headerRow
+            divider
+            glyphRow("천간") { $0.stem.map { ($0.korean, $0.hanja, $0.element, $0.yin_yang) } }
+            divider
+            textRow("십성", \.tenGodStem, accent: false, small: true)
+            divider
+            glyphRow("지지") { $0.branch.map { ($0.korean, $0.hanja, $0.element, $0.yin_yang) } }
+            divider
+            textRow("십성", \.tenGodBranch, accent: false, small: true)
+            divider
+            textRow("지장간", \.hidden, accent: false)
+            divider
+            textRow("12운성", \.stage, accent: true)
+            divider
+            textRow("12신살", \.sinsal, accent: false)
+        }
+    }
+
+    private var divider: some View { Rectangle().fill(DT.line).frame(height: 1) }
+
+    private var headerRow: some View {
+        HStack(spacing: 0) {
+            Color.clear.frame(width: labelW)
+            ForEach(columns) { c in
+                Text(c.header)
+                    .font(DT.sans(11, .semibold))
+                    .foregroundStyle(c.isDayMaster ? DT.accent : DT.inkSoft)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(c.isDayMaster ? DT.accent.opacity(0.07) : .clear)
+            }
+        }
+    }
+
+    private func glyphRow(_ label: String,
+                          _ pick: @escaping (SajuColumn) -> (String, String, String, String)?) -> some View {
+        HStack(spacing: 0) {
+            rowLabel(label)
+            ForEach(columns) { c in
+                cell(c) {
+                    if let (ko, hj, el, yy) = pick(c) {
+                        VStack(spacing: 1) {
+                            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                                Text(ko).font(DT.serif(21, .bold))
+                                Text(hj).font(DT.serif(13, .semibold))
+                            }
+                            .foregroundStyle(sajuElementColor(el))
+                            Text(elTag(el, yy))
+                                .font(DT.sans(9, .semibold))
+                                .foregroundStyle(sajuElementColor(el).opacity(0.9))
+                        }
+                        .padding(.vertical, 8)
+                    } else {
+                        Text("?").font(DT.serif(21, .bold)).foregroundStyle(DT.inkSoft).padding(.vertical, 8)
+                    }
+                }
+            }
+        }
+    }
+
+    private func textRow(_ label: String, _ kp: KeyPath<SajuColumn, String>,
+                         accent: Bool, small: Bool = false) -> some View {
+        HStack(spacing: 0) {
+            rowLabel(label)
+            ForEach(columns) { c in
+                let v = c[keyPath: kp]
+                cell(c) {
+                    Text(v)
+                        .font(DT.sans(small ? 11 : 12, .medium))
+                        .foregroundStyle(v == "—" ? DT.inkSoft.opacity(0.5) : (accent ? DT.accent : DT.ink))
+                        .lineLimit(1).minimumScaleFactor(0.65)
+                        .padding(.vertical, 7).padding(.horizontal, 2)
+                }
+            }
+        }
+    }
+
+    private func rowLabel(_ t: String) -> some View {
+        Text(t).font(DT.sans(10, .semibold)).foregroundStyle(DT.inkSoft)
+            .frame(width: labelW, alignment: .leading)
+    }
+
+    private func cell<V: View>(_ c: SajuColumn, @ViewBuilder _ content: () -> V) -> some View {
+        content()
+            .frame(maxWidth: .infinity)
+            .background(c.isDayMaster ? DT.accent.opacity(0.07) : .clear)
+    }
+
+    private func elTag(_ element: String, _ yinYang: String) -> String {
+        (yinYang == "Yang" ? "+" : "−") + sajuElementKo(element)
     }
 }

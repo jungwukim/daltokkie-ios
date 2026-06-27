@@ -302,34 +302,61 @@ struct SajuAnalysisSections: View {
         }
     }
 
-    // MARK: 신살 (12신살 + 특수살)
+    // MARK: 신살과 길성 — 기둥별(시·일·월·년) 표 + 상단 요약
     private func sinsalCard(_ spirits: [TwelveSpiritEntry], _ special: [SpecialSalEntry]) -> some View {
-        CraftCard {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "신살(神殺)")
-                ForEach(spirits.indices, id: \.self) { i in
-                    let s = spirits[i]
-                    salRow(s.spiritHangul, s.spiritHanja, s.spiritType, "\(s.pillar) · \(s.branchKorean)", s.description)
-                }
-                ForEach(special.indices, id: \.self) { i in
-                    let s = special[i]
-                    salRow(s.name, s.hanja, s.type, "", s.description)
-                }
-            }
+        let order = ["시주", "일주", "월주", "년주"]
+        let headers = ["생시", "생일", "생월", "생년"]
+        let idxOf = ["년주": 0, "월주": 1, "일주": 2, "시주": 3]   // pillarIndices: [년,월,일,시]
+        func sals(_ key: String) -> [(name: String, type: String)] {
+            var out: [(String, String)] = special
+                .filter { $0.pillarIndices.contains(idxOf[key] ?? -1) }
+                .map { ($0.name, $0.type) }
+            out += spirits.filter { $0.pillar == key }.map { ($0.spiritHangul, $0.spiritType) }
+            return out
         }
-    }
-    private func salRow(_ name: String, _ hanja: String, _ type: String, _ loc: String, _ desc: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text(type).font(DT.sans(10, .bold)).foregroundStyle(.white)
-                .padding(.horizontal, 6).padding(.vertical, 2)
-                .background(salColor(type)).clipShape(Capsule())
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text("\(name)(\(hanja))").font(DT.sans(12, .semibold)).foregroundStyle(DT.ink)
-                    if !loc.isEmpty { Text(loc).font(DT.sans(10)).foregroundStyle(DT.inkSoft) }
+        // 요약 줄 — 전체 고유 신살·길성
+        var seen = Set<String>(); var summary: [String] = []
+        for key in order { for s in sals(key) where !seen.contains(s.name) { seen.insert(s.name); summary.append(s.name) } }
+
+        return CraftCard {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionTitle(text: "신살과 길성(神殺·吉星)")
+                if !summary.isEmpty {
+                    Text(summary.joined(separator: ", "))
+                        .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                        .fixedSize(horizontal: false, vertical: true).lineSpacing(3)
                 }
-                if !desc.isEmpty {
-                    Text(desc).font(DT.sans(11)).foregroundStyle(DT.inkSoft).fixedSize(horizontal: false, vertical: true)
+                // 기둥별 표
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        Color.clear.frame(width: 40)
+                        ForEach(headers.indices, id: \.self) { i in
+                            Text(headers[i]).font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
+                                .frame(maxWidth: .infinity).padding(.vertical, 6)
+                        }
+                    }
+                    Rectangle().fill(DT.line).frame(height: 1)
+                    HStack(spacing: 0) {
+                        Text("신살\n길성").font(DT.sans(10, .semibold)).foregroundStyle(DT.inkSoft)
+                            .frame(width: 40, alignment: .leading)
+                        ForEach(order.indices, id: \.self) { i in
+                            let list = sals(order[i])
+                            VStack(spacing: 4) {
+                                if list.isEmpty {
+                                    Text("×").font(DT.sans(13)).foregroundStyle(DT.inkSoft.opacity(0.5))
+                                } else {
+                                    ForEach(list.indices, id: \.self) { j in
+                                        Text(list[j].name)
+                                            .font(DT.sans(11, .medium))
+                                            .foregroundStyle(salColor(list[j].type))
+                                            .lineLimit(1).minimumScaleFactor(0.7)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                        }
+                    }
                 }
             }
         }

@@ -136,6 +136,36 @@ final class AppState: ObservableObject {
         return bundle
     }
 
+    /// 오늘의 일진 payload — 콘텐츠/해석 라우트가 그날 간지를 추론(환각)하지 않도록 전달.
+    /// daily-* AI 콘텐츠(오늘의 한마디·운세·할일피할일 등)의 명리 정확도용.
+    func todayDailyPayload() -> [String: Any]? {
+        guard let bundle = ensureDailyBundle() else { return nil }
+        let t = bundle.today
+        let sinsals = HoshinSinSal.transitSinSals(
+            transitBranch: t.dayBranchKorean,
+            natalDayStem: bundle.saju.raw.day.stem, natalDayBranch: bundle.saju.raw.day.branch)
+        var relations: [String] = []
+        for tr in t.transitRelations {
+            for r in tr.stemRelations { relations.append("\(tr.natalPillar)와 \(r.type)") }
+            for r in tr.branchRelations { relations.append("\(tr.natalPillar)와 \(r.type)") }
+        }
+        let conditions: [[String: Any]] = t.cards.map {
+            ["name": $0.category, "score": $0.score, "grade": $0.grade]
+        }
+        return [
+            "date": t.date,
+            "weekday": Self.koWeekday(t.date),
+            "dayPillarKo": "\(t.dayStemKorean)\(t.dayBranchKorean)",
+            "tenGod": t.tenGodOfDay,
+            "twelveStage": t.twelveStageOfDay,
+            "overallScore": t.overallScore,
+            "overallGrade": t.overallGrade,
+            "conditions": conditions,
+            "relations": relations,
+            "sinsals": sinsals,
+        ]
+    }
+
     // MARK: - 홈 히어로 AI 한 줄 (하루 1회 생성·캐시, 실패/오프라인 시 규칙 기반 폴백)
 
     private func heroLineCacheKey(date: String, _ p: UserProfile) -> String {

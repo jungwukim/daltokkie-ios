@@ -530,12 +530,18 @@ struct HomeView: View {
 
 struct LuckyIndexDetailView: View {
     let bundle: DailyFortuneBundle
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
+    @State private var aiText = ""
+    @State private var aiLoading = true
+    @State private var aiErr: String?
+    @State private var aiTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    // 오늘의 운세 — 정확한 일진 기반 AI 해석(분야별)
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
                             SectionTitle(text: "오늘의 운세")
@@ -544,13 +550,19 @@ struct LuckyIndexDetailView: View {
                                 Text("\(t.overallScore)").font(DT.sans(28, .bold)).foregroundStyle(DT.accent)
                                 Text("점 · \(t.overallGrade)").font(DT.sans(13)).foregroundStyle(DT.inkSoft)
                             }
-                            ForEach(HomeConditions.from(cards: t.cards), id: \.title) { c in
-                                HStack {
-                                    Text(c.title).font(DT.sans(12, .medium)).foregroundStyle(DT.ink).frame(width: 60, alignment: .leading)
-                                    StarRatingView(value: HomeConditions.stars(c.score), size: 9)
-                                    Spacer()
-                                    Text("\(c.score)").font(DT.sans(11)).foregroundStyle(DT.inkSoft)
+                            Divider().background(DT.line).padding(.vertical, 2)
+                            if aiLoading && aiText.isEmpty {
+                                AISkeleton()
+                            } else if let e = aiErr, aiText.isEmpty {
+                                VStack(spacing: 8) {
+                                    Text("해석을 불러오지 못했어요").font(DT.sans(12)).foregroundStyle(DT.inkSoft)
+                                    Button("다시 시도") { load() }
+                                        .font(DT.sans(12, .semibold)).foregroundStyle(DT.accent)
                                 }
+                                .frame(maxWidth: .infinity).padding(.vertical, 6)
+                                .accessibilityLabel(e)
+                            } else {
+                                FormattedAIText(text: aiText)
                             }
                         }
                     }
@@ -589,6 +601,28 @@ struct LuckyIndexDetailView: View {
             .navigationTitle("오늘의 운세")
             .navigationBarTitleDisplayMode(.inline)
             .dtCloseToolbar { dismiss() }
+        }
+        .task { if aiText.isEmpty { load() } }
+        .onDisappear { aiTask?.cancel() }
+    }
+
+    private func load() {
+        guard let p = appState.profile, let r = appState.ensureSaju() else { aiLoading = false; return }
+        aiTask?.cancel()
+        aiText = ""; aiErr = nil; aiLoading = true
+        aiTask = Task {
+            do {
+                for try await chunk in AIProxy.content(
+                    id: "daily-fortune", tone: "warm",
+                    gender: p.gender, birthYear: p.year, birthMonth: p.month, birthDay: p.day,
+                    birthHour: p.hour, birthMinute: p.minute,
+                    sajuResult: r, region: p.region, daily: appState.todayDailyPayload()) {
+                    aiText += chunk
+                }
+            } catch {
+                if !Task.isCancelled { aiErr = "\(error)" }
+            }
+            aiLoading = false
         }
     }
 

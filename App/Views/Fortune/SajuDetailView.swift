@@ -130,7 +130,8 @@ struct SajuDetailView: View {
                     AIContentPanel(title: "세부 해석", sections: AIContentSections.saju) { id, tone in
                         AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                         birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
-                                        sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON())
+                                        sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON(),
+                                        daily: appState.todayDailyPayload())
                     }
                 }
                 .padding(.horizontal, DT.pagePadding)

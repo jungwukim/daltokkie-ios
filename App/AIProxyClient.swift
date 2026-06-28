@@ -69,7 +69,7 @@ enum AIProxy {
         id: String, tone: String,
         gender: String, birthYear: Int, birthMonth: Int, birthDay: Int, birthHour: Int?, birthMinute: Int,
         sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil,
-        region: String? = nil, timeline: [String: Any]? = nil
+        region: String? = nil, timeline: [String: Any]? = nil, daily: [String: Any]? = nil
     ) -> AsyncThrowingStream<String, Error> {
         var payload: [String: Any] = [
             "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
@@ -79,6 +79,7 @@ enum AIProxy {
         if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
         if let n = natalChart { payload["natalChart"] = jsonValue(n) }
         if let tl = timeline { payload["timeline"] = tl }   // 실제 연도 대운/세운/월운
+        if let d = daily { payload["daily"] = d }           // 오늘의 일진 (daily-* 콘텐츠 정확도)
         return stream(path: "/api/saju/content/\(id)",
                       payload: merged(payload, commonContext(birthYear: birthYear, region: region)))
     }

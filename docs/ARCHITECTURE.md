@@ -81,7 +81,7 @@
 | ↳ | `Home/HomeConditions.swift`·`LuckyItemReason.swift` | 컨디션·행운 아이템 사유 |
 | 운세 메뉴 | `Fortune/FortuneMenuView.swift` | 사주·점성·자미·궁합 진입 |
 | **사주 상세** | `Fortune/SajuDetailView.swift` | 히어로·명식표·분석섹션·AI |
-| ↳ | `Fortune/SajuAnalysisSections.swift` | 오행분포·신살길성표·관계·세운·운세달력(`FortuneCalendarView`·`MonthlyFortuneCalendar`) |
+| ↳ | `Fortune/SajuAnalysisSections.swift` | 오행분포·신살길성표·관계·세운·**운세달력**(`FortuneCalendarView`·`MonthlyFortuneCalendar`: 간지·십성·점수 + 음력·24절기·음력명절·**달 위상 Canvas(`MoonPhase`)**·범례) |
 | **점성·자미** | `Fortune/NatalZiweiViews.swift` | 차트·명반·AI |
 | ↳ | `Fortune/NatalDialChart.swift`·`ZiweiGridChart.swift` | Canvas 도식(온디바이스 렌더) |
 | 궁합 | `Fortune/CompatibilityView.swift` | 두 사주 **온디바이스 점수**(서버 불필요) |
@@ -100,8 +100,9 @@
 
 ### 3.1 LunarKit — 음↔양력 변환
 - `LegacyLunarConverter`: **사주용**(ft-lib 비트팩 테이블). `lunarToSolar()`.
-- `LunarConverter` + `LunarTable`: **자미용**(lunar-javascript 호환 테이블).
+- `LunarConverter` + `LunarTable`: **자미용**(lunar-javascript 호환 테이블). `solarToLunar()`도 제공 — 운세 달력의 음력·달 위상 표시에 사용.
 - 왜 둘? 두 라이브러리 테이블이 미세하게 달라 각 엔진의 원본과 맞춤(라운드트립 220케이스 검증).
+- `SajuKit.SolarTermsTable.termsInMonth(year:month:)` — 양력 월의 24절기(달력 표시용, 인접 연도 스캔으로 1월 소한 포함).
 
 ### 3.2 SajuKit — 사주팔자
 **`SajuCalculator.calculate()` 파이프라인** (`SajuCalculator.swift`):

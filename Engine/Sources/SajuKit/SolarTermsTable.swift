@@ -30,10 +30,13 @@ public enum SolarTermsTable {
     public static func termsInMonth(year: Int, month: Int) -> [Int: String] {
         var out: [Int: String] = [:]
         let cal = SajuCore.seoulCalendar
-        for entry in byYear[year] ?? [] {
-            let d = Date(timeIntervalSince1970: entry.timestampMs / 1000)
-            let c = cal.dateComponents([.year, .month, .day], from: d)
-            if c.year == year, c.month == month, let day = c.day { out[day] = entry.name }
+        // 일부 절기(소한·대한 등)는 데이터상 전/후년에 저장될 수 있어 인접 연도까지 스캔
+        for y in (year - 1)...(year + 1) {
+            for entry in byYear[y] ?? [] {
+                let d = Date(timeIntervalSince1970: entry.timestampMs / 1000)
+                let c = cal.dateComponents([.year, .month, .day], from: d)
+                if c.year == year, c.month == month, let day = c.day { out[day] = entry.name }
+            }
         }
         return out
     }

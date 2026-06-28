@@ -403,15 +403,31 @@ struct MonthlyFortuneCalendar: View {
     private var terms: [Int: String] { SolarTermsTable.termsInMonth(year: year, month: month) }
     private func lunarOf(_ day: Int) -> LunarDate? { try? LunarConverter.solarToLunar(year: year, month: month, day: day) }
 
-    /// 셀 하단 마커 — 절기 우선, 그다음 음력 초하루(달 시작)/보름, 평일은 음력일
-    private func marker(_ day: Int) -> (text: String, color: Color, strong: Bool) {
-        if let t = terms[day] { return (t, DT.accent, true) }
-        if let lu = lunarOf(day) {
-            if lu.day == 1 { return ("\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", dtDyn(0x8C6E3C, 0xC0A368), true) }
-            if lu.day == 15 { return ("보름", dtDyn(0x8C6E3C, 0xC0A368), true) }
-            return ("음 \(lu.day)", DT.inkSoft.opacity(0.7), false)
+    /// 음력일 → 달 위상 SF Symbol (음력 날짜가 곧 달 모양)
+    private func moonSymbol(_ lunarDay: Int) -> String {
+        switch lunarDay {
+        case 1:        return "moonphase.new"               // 삭(신월)
+        case 2...6:    return "moonphase.waxing.crescent"   // 초승달
+        case 7...9:    return "moonphase.first.quarter"     // 상현 반달
+        case 10...14:  return "moonphase.waxing.gibbous"
+        case 15:       return "moonphase.full"              // 보름달
+        case 16...20:  return "moonphase.waning.gibbous"
+        case 21...23:  return "moonphase.last.quarter"      // 하현 반달
+        default:       return "moonphase.waning.crescent"   // 그믐달
         }
-        return ("", DT.inkSoft, false)
+    }
+
+    /// 셀 하단 마커 — 절기 우선, 그다음 음력(달 위상 아이콘 + 초하루/보름 강조)
+    private func marker(_ day: Int) -> (icon: String?, text: String, color: Color, strong: Bool) {
+        if let t = terms[day] { return (nil, t, DT.accent, true) }
+        if let lu = lunarOf(day) {
+            let icon = moonSymbol(lu.day)
+            let gold = dtDyn(0x8C6E3C, 0xC0A368)
+            if lu.day == 1 { return (icon, "\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", gold, true) }
+            if lu.day == 15 { return (icon, "보름", gold, true) }
+            return (icon, "\(lu.day)", DT.inkSoft.opacity(0.75), false)
+        }
+        return (nil, "", DT.inkSoft, false)
     }
 
     private func cell(_ d: MonthlyCalendarDay) -> some View {
@@ -430,10 +446,17 @@ struct MonthlyFortuneCalendar: View {
             Text(d.tenGod)
                 .font(DT.sans(8)).foregroundStyle(DT.inkSoft)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(mk.text)
-                .font(DT.sans(8, mk.strong ? .semibold : .regular))
-                .foregroundStyle(mk.color)
-                .lineLimit(1).minimumScaleFactor(0.6)
+            HStack(spacing: 2) {
+                if let ic = mk.icon {
+                    Image(systemName: ic).font(.system(size: 7)).foregroundStyle(mk.color)
+                }
+                if !mk.text.isEmpty {
+                    Text(mk.text)
+                        .font(DT.sans(8, mk.strong ? .semibold : .regular))
+                        .foregroundStyle(mk.color)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                }
+            }
         }
         .frame(maxWidth: .infinity).frame(height: 52)
         .background(
@@ -458,6 +481,7 @@ struct MonthlyFortuneCalendar: View {
                 Text("\(month)월 \(d.day)일 (\(weekday(d.day)))")
                     .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
                 if let lu = lunarOf(d.day) {
+                    Image(systemName: moonSymbol(lu.day)).font(.system(size: 11)).foregroundStyle(dtDyn(0x8C6E3C, 0xC0A368))
                     Text("음력 \(lu.isLeapMonth ? "윤" : "")\(lu.month).\(lu.day)")
                         .font(DT.sans(11)).foregroundStyle(DT.inkSoft)
                 }

@@ -436,9 +436,12 @@ struct ZiweiDetailView: View {
                             AIProxy.interpretZiwei(chart: chart, liunian: appState.ziweiLiunian, daxianList: appState.ziweiDaxian ?? [], gender: profile.gender, birthYear: profile.year, region: profile.region)
                         }
                         AIContentPanel(title: "자미두수 세부 해석", sections: AIContentSections.ziwei) { id, tone in
-                            AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
-                                            birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
-                                            region: profile.region)
+                            // 자미 명반은 양력 입력 기준 → 음력 프로필이면 양력 변환해 전달(서버 재계산 정확도)
+                            let s = appState.solarBirthYMD()
+                            return AIProxy.content(id: id, tone: tone, gender: profile.gender,
+                                            birthYear: s?.year ?? profile.year, birthMonth: s?.month ?? profile.month,
+                                            birthDay: s?.day ?? profile.day, birthHour: profile.hour, birthMinute: profile.minute,
+                                            region: profile.region, isLunar: false)
                         }
                     }
                 }

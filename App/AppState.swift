@@ -242,6 +242,12 @@ final class AppState: ObservableObject {
 
     /// 프로필 생년월일을 양력으로 — 음력 입력이면 양력 변환(사주와 동일 LegacyLunarConverter).
     /// 점성/자미 엔진은 양력 입력을 기대하므로 음력 프로필은 반드시 선변환해야 함.
+    /// 프로필의 양력 생년월일 — 자미/점성 콘텐츠가 서버에서 올바른(양력) 날짜로 계산하도록 전달용
+    func solarBirthYMD() -> (year: Int, month: Int, day: Int)? {
+        guard let p = profile else { return nil }
+        return solarBirth(p)
+    }
+
     private func solarBirth(_ p: UserProfile) -> (year: Int, month: Int, day: Int) {
         if p.calendar == "lunar",
            let s = try? LegacyLunarConverter.lunarToSolar(

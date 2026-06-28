@@ -197,6 +197,15 @@
 **관련 파일**: `App/Views/Fortune/SajuDetailView.swift`(`SajuChartTable`/`SajuColumn`/`makeChartColumns`), `App/Views/Fortune/SajuAnalysisSections.swift`(`sinsalCard` 표 재작성)
 **관련**: DEC-016(사주 상세 온디바이스 이관), 십성 배치표·12운성·신살 나열 카드 제거
 
+### DEC-019: AI 콘텐츠 정확도 — 엔진값 주입 + 출력 레벨 검증 원칙 (2026-06-28)
+
+**결정**: LLM은 명리/천체/자미 사실을 **절대 생성하지 않고** 엔진 계산값만 해석한다. ① 사주 콘텐츠는 서버가 `ftCalculateSaju`+`ftFullAnalysis`로 풀분석 재계산(음력 정확), ② 일진·월간달력·행운(시간/색/방위/숫자)·topArea·주말은 온디바이스 엔진값을 payload로 주입, ③ 점성 트랜짓은 `calculateNatal(오늘)`, 자미 생년사화는 per-star siHua, ④ daily 콘텐츠는 (id·날짜·프로필) 캐시 + 톤 warm 고정으로 화면 간 동일, ⑤ 영역은 상위 3개 날짜 시드 회전(직장/재물 편중 탈피) + 주말 업무영역 제외. **검증은 컴파일/골든이 아니라 배포 후 실제 호출 출력 대조로 한다.**
+**근거**: 사용자 반복 지적 — 컴파일·골든 통과만으로 "검증"이라 했으나 실제 출력엔 환각/모순/단조(직장·재물)/요일무시가 남아 있었음. 엔진 무결성(계산)과 출력 정확성(LLM 해석)은 별개이며, 후자는 출력을 직접 까봐야 잡힘.
+**대안 검토**: ① 앱이 FullAnalysisResult 전체 직렬화 — 형태 방대·취약으로 반려, 서버 재계산 채택 ② LLM 자체 추론 신뢰 — 환각으로 반려 ③ 톤별 daily 캐시 — 화면 간 톤 불일치로 톤 무관 캐시 채택
+**관련 파일**: saju-api `app/api/saju/content/[id]/route.ts`, `app/api/daily/interpret/route.ts`, `lib/ai/now-context.ts`, `lib/ai/format-{saju,natal,ziwei}-for-ai.ts`, `lib/ai/prompts/content/*`; iOS `App/AppState.swift`(dailyAreas·todayDailyPayload·cachedDailyStream), `App/AIProxyClient.swift`
+**남은 과제**: daily-one-liner가 `BASE_KNOWLEDGE` 장문 강제로 3줄 미반영 — 메뉴 제거(달빛편지와 중복) 또는 BASE 예외 결정 대기
+**관련**: DEC-014(일일운세 자체 분기), DEC-017(홈 한 줄 하이브리드)
+
 ---
 
 ## 결정 템플릿

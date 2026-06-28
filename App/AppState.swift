@@ -21,6 +21,9 @@ final class AppState: ObservableObject {
     @Published var heroLines: [String: MoonLetter] = [:]
     private var heroLinesLoading: Set<String> = []
 
+    /// daily AI 콘텐츠 세션 캐시 — 같은(id·날짜·프로필) 콘텐츠는 어느 화면에서든 동일 텍스트 (홈 자세히보기 ↔ 사주 세부해석 일치)
+    private var dailyContentCache: [String: String] = [:]
+
     enum Tab: String, CaseIterable {
         case home, talisman, fortune, tarot, my
     }
@@ -43,6 +46,7 @@ final class AppState: ObservableObject {
         dailyBundle = nil
         heroLines = [:]
         heroLinesLoading = []
+        dailyContentCache = [:]
         natalChart = nil
         ziweiChart = nil
         ziweiLiunian = nil
@@ -152,9 +156,17 @@ final class AppState: ObservableObject {
         let conditions: [[String: Any]] = t.cards.map {
             ["name": $0.category, "score": $0.score, "grade": $0.grade]
         }
+        let sortedCards = t.cards.sorted { $0.score > $1.score }
+        let topArea = sortedCards.first?.category ?? ""    // 실제 최고 점수 영역 (LLM이 임의 영역 못 쓰게)
+        let lowArea = sortedCards.last?.category ?? ""
+        let wd = Self.weekdayNum(t.date)
+        let isWeekend = (wd == 1 || wd == 7)               // 일·토
         return [
             "date": t.date,
             "weekday": Self.koWeekday(t.date),
+            "isWeekend": isWeekend,
+            "topArea": topArea,
+            "lowArea": lowArea,
             "dayPillarKo": "\(t.dayStemKorean)\(t.dayBranchKorean)",
             "tenGod": t.tenGodOfDay,
             "twelveStage": t.twelveStageOfDay,
@@ -168,6 +180,35 @@ final class AppState: ObservableObject {
             "unluckyHour": bundle.luckyHours.unlucky,
             "luckyColor": bundle.luckyItems.color,
         ]
+    }
+
+    /// daily 콘텐츠 캐시 키 (톤 무관 — 오늘류는 따뜻한 톤 고정, 화면 간 동일 텍스트 보장)
+    private func dailyCacheKey(_ id: String) -> String? {
+        guard let p = profile else { return nil }
+        let t = Self.todayComponents()
+        let date = String(format: "%04d-%02d-%02d", t.y, t.m, t.d)
+        let sig = "\(p.year).\(p.month).\(p.day).\(p.hour ?? -1).\(p.minute).\(p.gender).\(p.calendar).\(p.region)"
+        return "dailyAI|\(id)|\(date)|\(sig)"
+    }
+
+    /// daily 콘텐츠를 캐시 우선 스트리밍 — 캐시 있으면 그 텍스트를 한 번에, 없으면 build를 누적·캐시.
+    /// 홈 자세히보기·사주 세부해석이 같은 콘텐츠를 동일 텍스트로 보여주도록(일관성).
+    func cachedDailyStream(id: String, build: @escaping () -> AsyncThrowingStream<String, Error>) -> AsyncThrowingStream<String, Error> {
+        if let key = dailyCacheKey(id), let cached = dailyContentCache[key] {
+            return AsyncThrowingStream { cont in cont.yield(cached); cont.finish() }
+        }
+        return AsyncThrowingStream { cont in
+            Task { @MainActor in
+                var full = ""
+                do {
+                    for try await chunk in build() { full += chunk; cont.yield(chunk) }
+                    if let key = self.dailyCacheKey(id), !full.isEmpty { self.dailyContentCache[key] = full }
+                    cont.finish()
+                } catch {
+                    cont.finish(throwing: error)
+                }
+            }
+        }
     }
 
     // MARK: - 홈 히어로 AI 한 줄 (하루 1회 생성·캐시, 실패/오프라인 시 규칙 기반 폴백)
@@ -201,6 +242,16 @@ final class AppState: ObservableObject {
         cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
         let wd = cal.component(.weekday, from: d)   // 1=일
         return ["일", "월", "화", "수", "목", "금", "토"][(wd - 1) % 7] + "요일"
+    }
+
+    private static func weekdayNum(_ date: String) -> Int {   // 1=일 … 7=토
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        guard let d = f.date(from: date) else { return 0 }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        return cal.component(.weekday, from: d)
     }
 
     /// 주간 7일치(오늘±3) AI 한 줄을 한 번에 확보 — 날짜별로 캐시 있으면 즉시,

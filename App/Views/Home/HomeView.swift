@@ -612,13 +612,16 @@ struct LuckyIndexDetailView: View {
         aiText = ""; aiErr = nil; aiLoading = true
         aiTask = Task {
             do {
-                for try await chunk in AIProxy.content(
-                    id: "daily-fortune", tone: "warm",
-                    gender: p.gender, birthYear: p.year, birthMonth: p.month, birthDay: p.day,
-                    birthHour: p.hour, birthMinute: p.minute,
-                    sajuResult: r, region: p.region, daily: appState.todayDailyPayload(),
-                    isLunar: p.calendar == "lunar", isLeapMonth: p.isLeapMonth,
-                    useTrueSolarTime: p.useTrueSolarTime) {
+                let stream = appState.cachedDailyStream(id: "daily-fortune") {
+                    AIProxy.content(
+                        id: "daily-fortune", tone: "warm",
+                        gender: p.gender, birthYear: p.year, birthMonth: p.month, birthDay: p.day,
+                        birthHour: p.hour, birthMinute: p.minute,
+                        sajuResult: r, region: p.region, daily: appState.todayDailyPayload(),
+                        isLunar: p.calendar == "lunar", isLeapMonth: p.isLeapMonth,
+                        useTrueSolarTime: p.useTrueSolarTime)
+                }
+                for try await chunk in stream {
                     aiText += chunk
                 }
             } catch {

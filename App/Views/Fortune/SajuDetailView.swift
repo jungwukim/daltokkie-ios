@@ -128,12 +128,18 @@ struct SajuDetailView: View {
                     }
 
                     AIContentPanel(title: "세부 해석", sections: AIContentSections.saju) { id, tone in
-                        AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
-                                        birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
-                                        sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON(),
-                                        daily: appState.todayDailyPayload(),
-                                        isLunar: profile.calendar == "lunar", isLeapMonth: profile.isLeapMonth,
-                                        useTrueSolarTime: profile.useTrueSolarTime)
+                        // 오늘류 콘텐츠(일별)는 톤 고정(warm)+캐시 → 홈 자세히보기와 동일 텍스트로 일관성 유지
+                        let isDaily = ["daily-one-liner", "daily-fortune", "do-dont", "focus-now", "lucky-day", "fortune-calendar"].contains(id)
+                        let useTone = isDaily ? "warm" : tone
+                        let build = {
+                            AIProxy.content(id: id, tone: useTone, gender: profile.gender, birthYear: profile.year,
+                                            birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
+                                            sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON(),
+                                            daily: appState.todayDailyPayload(),
+                                            isLunar: profile.calendar == "lunar", isLeapMonth: profile.isLeapMonth,
+                                            useTrueSolarTime: profile.useTrueSolarTime)
+                        }
+                        return isDaily ? appState.cachedDailyStream(id: id, build: build) : build()
                     }
                 }
                 .padding(.horizontal, DT.pagePadding)

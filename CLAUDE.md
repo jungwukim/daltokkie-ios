@@ -12,6 +12,7 @@ XcodeGen(`project.yml`)으로 프로젝트 관리.
 3. **불확실하면 질문** — 임의 판단/할루시네이션 금지
 4. **개발 프로세스**: docs/PROCESS.md 참조 (PDCA + TDD)
 5. **작업 앵커**: 세션 시작 시 docs/WORKLOG.md 읽을 것, 작업 후 업데이트
+6. **아키텍처 지도**: 앱·엔진·서버 구조/흐름 파악 시 docs/ARCHITECTURE.md 참조. **구조가 바뀌면(엔진·라우트·콘텐츠 흐름·데이터 계약 등) 같은 커밋에서 ARCHITECTURE.md도 갱신할 것.** 단 문서와 코드가 어긋나면 코드가 진실 — 중요한 판단 전 실제 파일 확인
 
 ## 빌드 & 테스트
 
@@ -79,6 +80,7 @@ Engine/                     ← SPM 패키지 (순수 Swift, UI 의존 없음)
 ## 참조 문서
 
 - `docs/WORKLOG.md` — 작업 히스토리 앵커 (매 세션 필수 확인)
+- `docs/ARCHITECTURE.md` — 앱·엔진·서버 전체 구조 + 내부 로직 + 콘텐츠 흐름 + 다이어그램 (구조 변경 시 갱신)
 - `docs/PROCESS.md` — PDCA + TDD 개발 프로세스
 - `docs/DECISIONS.md` — 설계 결정 기록 (DEC-001~)
 - `STATUS.md` — 프로젝트 전체 상태

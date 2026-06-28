@@ -417,8 +417,28 @@ struct MonthlyFortuneCalendar: View {
         }
     }
 
-    /// 셀 하단 마커 — 절기 우선, 그다음 음력(달 위상 아이콘 + 초하루/보름 강조)
+    /// 음력 명절 (단오·추석 등) — 음력 월/일 기준. 절기(양력)와 별개
+    private func festival(_ lu: LunarDate) -> String? {
+        if lu.isLeapMonth { return nil }
+        switch (lu.month, lu.day) {
+        case (1, 1):   return "설날"
+        case (1, 15):  return "정월대보름"
+        case (3, 3):   return "삼짇날"
+        case (5, 5):   return "단오"
+        case (6, 15):  return "유두"
+        case (7, 7):   return "칠석"
+        case (7, 15):  return "백중"
+        case (8, 15):  return "추석"
+        case (9, 9):   return "중양절"
+        default:       return nil
+        }
+    }
+    private func festivalOf(_ day: Int) -> String? { lunarOf(day).flatMap(festival) }
+    private let festivalColor = dtDyn(0xC0392B, 0xE0746A)
+
+    /// 셀 하단 마커 — 명절(음력) > 절기(양력) > 음력 초하루/보름 > 음력일. 달 위상 아이콘 동반
     private func marker(_ day: Int) -> (icon: String?, text: String, color: Color, strong: Bool) {
+        if let lu = lunarOf(day), let fes = festival(lu) { return (moonSymbol(lu.day), fes, festivalColor, true) }
         if let t = terms[day] { return (nil, t, DT.accent, true) }
         if let lu = lunarOf(day) {
             let icon = moonSymbol(lu.day)
@@ -468,7 +488,10 @@ struct MonthlyFortuneCalendar: View {
         }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isSel ? DT.accent : (terms[d.day] != nil ? DT.accent.opacity(0.4) : .clear), lineWidth: isSel ? 1.2 : 1)
+                .stroke(isSel ? DT.accent
+                        : (festivalOf(d.day) != nil ? festivalColor.opacity(0.55)
+                           : (terms[d.day] != nil ? DT.accent.opacity(0.4) : .clear)),
+                        lineWidth: isSel ? 1.2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture { selected = (selected == d.day) ? nil : d.day }
@@ -484,6 +507,11 @@ struct MonthlyFortuneCalendar: View {
                     Image(systemName: moonSymbol(lu.day)).font(.system(size: 11)).foregroundStyle(dtDyn(0x8C6E3C, 0xC0A368))
                     Text("음력 \(lu.isLeapMonth ? "윤" : "")\(lu.month).\(lu.day)")
                         .font(DT.sans(11)).foregroundStyle(DT.inkSoft)
+                }
+                if let fes = festivalOf(d.day) {
+                    Text(fes).font(DT.sans(10, .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(festivalColor).clipShape(Capsule())
                 }
                 if let t = terms[d.day] {
                     Text(t).font(DT.sans(10, .bold)).foregroundStyle(.white)

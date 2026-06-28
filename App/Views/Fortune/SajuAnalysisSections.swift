@@ -380,6 +380,7 @@ struct MonthlyFortuneCalendar: View {
                         }
                     }
                 }
+                legendView
                 if let sel = selected, let d = days.first(where: { $0.day == sel }) {
                     detail(d)
                 } else {
@@ -403,8 +404,9 @@ struct MonthlyFortuneCalendar: View {
     private var terms: [Int: String] { SolarTermsTable.termsInMonth(year: year, month: month) }
     private func lunarOf(_ day: Int) -> LunarDate? { try? LunarConverter.solarToLunar(year: year, month: month, day: day) }
 
-    /// 달빛 색 — 노르스름하게(달 모양이 또렷하게 보이도록)
+    /// 달빛 색 — 밝은 면(노르스름)·그림자 면(어두운 회색)
     private let moonColor = dtDyn(0xE0A93B, 0xF3CE6B)
+    private let moonDark = dtDyn(0xBCAE96, 0x46423A)
 
     /// 음력일 → 달 위상 SF Symbol (음력 날짜가 곧 달 모양)
     private func moonSymbol(_ lunarDay: Int) -> String {
@@ -453,6 +455,33 @@ struct MonthlyFortuneCalendar: View {
         return (nil, "", DT.inkSoft, false)
     }
 
+    // 범례 — 표시(오늘·명절·절기·음력) + 점수
+    private var legendView: some View {
+        VStack(spacing: 5) {
+            HStack(spacing: 11) {
+                legendItem(Circle().fill(DT.accent).frame(width: 8, height: 8), "오늘")
+                legendItem(Circle().fill(festivalColor).frame(width: 8, height: 8), "명절")
+                legendItem(Circle().strokeBorder(DT.accent.opacity(0.6), lineWidth: 1.3).frame(width: 8, height: 8), "절기")
+                legendItem(Image(systemName: "moonphase.waxing.crescent").symbolRenderingMode(.palette)
+                    .foregroundStyle(moonColor, moonDark).font(.system(size: 9)), "음력")
+            }
+            HStack(spacing: 11) {
+                legendItem(Circle().fill(dtDyn(0x5A9E6F, 0x7FC093)).frame(width: 8, height: 8), "좋음")
+                legendItem(Circle().fill(dtDyn(0xE0B450, 0xEBC873)).frame(width: 8, height: 8), "보통")
+                legendItem(Circle().fill(DT.accent).frame(width: 8, height: 8), "주의")
+                legendItem(Circle().fill(dtDyn(0xB0A088, 0x8E826E)).frame(width: 8, height: 8), "휴식")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+    }
+    private func legendItem(_ indicator: some View, _ label: String) -> some View {
+        HStack(spacing: 3) {
+            indicator
+            Text(label).font(DT.sans(9)).foregroundStyle(DT.inkSoft)
+        }
+    }
+
     private func cell(_ d: MonthlyCalendarDay) -> some View {
         let isToday = d.day == today
         let isSel = d.day == selected
@@ -462,7 +491,9 @@ struct MonthlyFortuneCalendar: View {
         return VStack(spacing: 2) {
             Text("\(d.day)")
                 .font(DT.sans(11, isToday ? .bold : .medium))
-                .foregroundStyle(isToday ? DT.accent : (isSun ? dtDyn(0xC0506A, 0xE08098) : (isSat ? dtDyn(0x3F6CB0, 0x6E97D2) : DT.ink)))
+                .foregroundStyle(isToday ? .white : (isSun ? dtDyn(0xC0506A, 0xE08098) : (isSat ? dtDyn(0x3F6CB0, 0x6E97D2) : DT.ink)))
+                .frame(width: 18, height: 18)
+                .background(isToday ? Circle().fill(DT.accent) : nil)
             Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
                 .font(DT.serif(12, .semibold)).foregroundStyle(elColor(stemElement(d.stemKorean)))
                 .lineLimit(1).minimumScaleFactor(0.6)
@@ -471,8 +502,9 @@ struct MonthlyFortuneCalendar: View {
                 .lineLimit(1).minimumScaleFactor(0.6)
             HStack(spacing: 2) {
                 if let ic = mk.icon {
-                    Image(systemName: ic).symbolRenderingMode(.monochrome)
-                        .font(.system(size: 9)).foregroundStyle(moonColor)
+                    Image(systemName: ic).symbolRenderingMode(.palette)
+                        .foregroundStyle(moonColor, moonDark)
+                        .font(.system(size: 9))
                 }
                 if !mk.text.isEmpty {
                     Text(mk.text)
@@ -508,7 +540,8 @@ struct MonthlyFortuneCalendar: View {
                 Text("\(month)월 \(d.day)일 (\(weekday(d.day)))")
                     .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
                 if let lu = lunarOf(d.day) {
-                    Image(systemName: moonSymbol(lu.day)).font(.system(size: 13)).foregroundStyle(moonColor)
+                    Image(systemName: moonSymbol(lu.day)).symbolRenderingMode(.palette)
+                        .foregroundStyle(moonColor, moonDark).font(.system(size: 13))
                     Text("음력 \(lu.isLeapMonth ? "윤" : "")\(lu.month).\(lu.day)")
                         .font(DT.sans(11)).foregroundStyle(DT.inkSoft)
                 }
@@ -620,7 +653,6 @@ struct FortuneCalendarView: View {
                         MonthlyFortuneCalendar(days: days, year: year, month: month,
                                                today: today, lead: lead, showHeader: false)
                             .id("\(year)-\(month)")   // 월 전환 시 선택 초기화
-                        legend
                     }
                     .padding(.horizontal, DT.pagePadding)
                     .padding(.vertical, 12)
@@ -651,20 +683,6 @@ struct FortuneCalendarView: View {
                     .foregroundStyle(DT.ink).frame(width: 44, height: 38)
             }
         }
-    }
-
-    private var legend: some View {
-        HStack(spacing: 14) {
-            legendDot(dtDyn(0x5A9E6F, 0x7FC093), "좋음")
-            legendDot(dtDyn(0xE0B450, 0xEBC873), "보통")
-            legendDot(DT.accent, "주의")
-            legendDot(dtDyn(0xB0A088, 0x8E826E), "휴식")
-        }
-        .font(DT.sans(10)).foregroundStyle(DT.inkSoft)
-        .frame(maxWidth: .infinity)
-    }
-    private func legendDot(_ c: Color, _ t: String) -> some View {
-        HStack(spacing: 3) { Circle().fill(c).frame(width: 6, height: 6); Text(t) }
     }
 
     private func shift(_ d: Int) {

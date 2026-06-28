@@ -441,9 +441,9 @@ struct MonthlyFortuneCalendar: View {
         if let t = terms[day] { return (false, t, DT.accent, true) }
         if let lu = lunarOf(day) {
             let gold = dtDyn(0x8C6E3C, 0xC0A368)
-            if lu.day == 1 { return (true, "\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", gold, true) }
+            if lu.day == 1 { return (true, "\(lu.isLeapMonth ? "윤" : "")\(lu.month)월 1일", gold, true) }
             if lu.day == 15 { return (true, "보름", gold, true) }
-            return (true, "\(lu.day)", DT.inkSoft.opacity(0.75), false)
+            return (true, "음 \(lu.day)", DT.inkSoft.opacity(0.75), false)
         }
         return (false, "", DT.inkSoft, false)
     }
@@ -480,10 +480,18 @@ struct MonthlyFortuneCalendar: View {
         let mk = marker(d.day)
         let isSat = weekday(d.day) == "토"
         let isSun = weekday(d.day) == "일"
+        let isFes = festivalOf(d.day) != nil
+        let isTerm = terms[d.day] != nil
+        // 날짜 숫자 색 — 오늘(흰색) > 명절(빨강) > 절기(핑크) > 일/토 > 평일
+        let dayColor: Color = isToday ? .white
+            : (isFes ? festivalColor
+               : (isTerm ? DT.accent
+                  : (isSun ? dtDyn(0xC0506A, 0xE08098)
+                     : (isSat ? dtDyn(0x3F6CB0, 0x6E97D2) : DT.ink))))
         return VStack(spacing: 2) {
             Text("\(d.day)")
-                .font(DT.sans(11, isToday ? .bold : .medium))
-                .foregroundStyle(isToday ? .white : (isSun ? dtDyn(0xC0506A, 0xE08098) : (isSat ? dtDyn(0x3F6CB0, 0x6E97D2) : DT.ink)))
+                .font(DT.sans(11, (isToday || isFes || isTerm) ? .bold : .medium))
+                .foregroundStyle(dayColor)
                 .frame(width: 18, height: 18)
                 .background(isToday ? Circle().fill(DT.accent) : nil)
             Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
@@ -513,10 +521,9 @@ struct MonthlyFortuneCalendar: View {
             Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5).padding(4)
         }
         .overlay(
+            // 박스 테두리는 오늘/선택만 — 절기·명절은 날짜 색으로 표시(테두리 X)
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isSel ? DT.accent
-                        : (festivalOf(d.day) != nil ? festivalColor.opacity(0.55)
-                           : (terms[d.day] != nil ? DT.accent.opacity(0.4) : .clear)),
+                .stroke(isSel ? DT.accent : (isToday ? DT.accent.opacity(0.5) : .clear),
                         lineWidth: isSel ? 1.2 : 1)
         )
         .contentShape(Rectangle())

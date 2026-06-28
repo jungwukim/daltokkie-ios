@@ -403,6 +403,9 @@ struct MonthlyFortuneCalendar: View {
     private var terms: [Int: String] { SolarTermsTable.termsInMonth(year: year, month: month) }
     private func lunarOf(_ day: Int) -> LunarDate? { try? LunarConverter.solarToLunar(year: year, month: month, day: day) }
 
+    /// 달빛 색 — 노르스름하게(달 모양이 또렷하게 보이도록)
+    private let moonColor = dtDyn(0xE0A93B, 0xF3CE6B)
+
     /// 음력일 → 달 위상 SF Symbol (음력 날짜가 곧 달 모양)
     private func moonSymbol(_ lunarDay: Int) -> String {
         switch lunarDay {
@@ -468,7 +471,8 @@ struct MonthlyFortuneCalendar: View {
                 .lineLimit(1).minimumScaleFactor(0.6)
             HStack(spacing: 2) {
                 if let ic = mk.icon {
-                    Image(systemName: ic).font(.system(size: 7)).foregroundStyle(mk.color)
+                    Image(systemName: ic).symbolRenderingMode(.monochrome)
+                        .font(.system(size: 9)).foregroundStyle(moonColor)
                 }
                 if !mk.text.isEmpty {
                     Text(mk.text)
@@ -504,7 +508,7 @@ struct MonthlyFortuneCalendar: View {
                 Text("\(month)월 \(d.day)일 (\(weekday(d.day)))")
                     .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
                 if let lu = lunarOf(d.day) {
-                    Image(systemName: moonSymbol(lu.day)).font(.system(size: 11)).foregroundStyle(dtDyn(0x8C6E3C, 0xC0A368))
+                    Image(systemName: moonSymbol(lu.day)).font(.system(size: 13)).foregroundStyle(moonColor)
                     Text("음력 \(lu.isLeapMonth ? "윤" : "")\(lu.month).\(lu.day)")
                         .font(DT.sans(11)).foregroundStyle(DT.inkSoft)
                 }

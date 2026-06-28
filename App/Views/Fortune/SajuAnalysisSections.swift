@@ -409,29 +409,12 @@ struct MonthlyFortuneCalendar: View {
     private let moonColor = dtDyn(0xE6AE3C, 0xF3CE6B)
     private let moonDark = dtDyn(0x6E665A, 0x37332C)
 
-    /// 달 위상 뷰 — 어두운 원반(그림자) 위에 밝은 위상(불 켜진 면). 실제 달처럼.
+    /// 달 위상 뷰 — Canvas로 직접 그려 항상 정확(보름=꽉 찬 원, 반달·초승 등 또렷)
     private func moonView(_ lunarDay: Int, _ size: CGFloat) -> some View {
-        ZStack {
-            Circle().fill(moonDark).frame(width: size * 0.74, height: size * 0.74)
-            Image(systemName: moonSymbol(lunarDay)).symbolRenderingMode(.monochrome)
-                .font(.system(size: size)).foregroundStyle(moonColor)
-        }
-        .frame(width: size, height: size)
+        MoonPhase(phase: Double(lunarDay - 1) / 29.53, lit: moonColor, shadow: moonDark)
+            .frame(width: size, height: size)
     }
 
-    /// 음력일 → 달 위상 SF Symbol (음력 날짜가 곧 달 모양)
-    private func moonSymbol(_ lunarDay: Int) -> String {
-        switch lunarDay {
-        case 1:        return "moonphase.new"               // 삭(신월)
-        case 2...6:    return "moonphase.waxing.crescent"   // 초승달
-        case 7...9:    return "moonphase.first.quarter"     // 상현 반달
-        case 10...14:  return "moonphase.waxing.gibbous"
-        case 15:       return "moonphase.full"              // 보름달
-        case 16...20:  return "moonphase.waning.gibbous"
-        case 21...23:  return "moonphase.last.quarter"      // 하현 반달
-        default:       return "moonphase.waning.crescent"   // 그믐달
-        }
-    }
 
     /// 음력 명절 (단오·추석 등) — 음력 월/일 기준. 절기(양력)와 별개
     private func festival(_ lu: LunarDate) -> String? {
@@ -452,18 +435,17 @@ struct MonthlyFortuneCalendar: View {
     private func festivalOf(_ day: Int) -> String? { lunarOf(day).flatMap(festival) }
     private let festivalColor = dtDyn(0xC0392B, 0xE0746A)
 
-    /// 셀 하단 마커 — 명절(음력) > 절기(양력) > 음력 초하루/보름 > 음력일. 달 위상 아이콘 동반
-    private func marker(_ day: Int) -> (icon: String?, text: String, color: Color, strong: Bool) {
-        if let lu = lunarOf(day), let fes = festival(lu) { return (moonSymbol(lu.day), fes, festivalColor, true) }
-        if let t = terms[day] { return (nil, t, DT.accent, true) }
+    /// 셀 하단 마커 — 명절(음력) > 절기(양력) > 음력 초하루/보름 > 음력일. 달 위상 동반(showMoon)
+    private func marker(_ day: Int) -> (showMoon: Bool, text: String, color: Color, strong: Bool) {
+        if let lu = lunarOf(day), let fes = festival(lu) { _ = lu; return (true, fes, festivalColor, true) }
+        if let t = terms[day] { return (false, t, DT.accent, true) }
         if let lu = lunarOf(day) {
-            let icon = moonSymbol(lu.day)
             let gold = dtDyn(0x8C6E3C, 0xC0A368)
-            if lu.day == 1 { return (icon, "\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", gold, true) }
-            if lu.day == 15 { return (icon, "보름", gold, true) }
-            return (icon, "\(lu.day)", DT.inkSoft.opacity(0.75), false)
+            if lu.day == 1 { return (true, "\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", gold, true) }
+            if lu.day == 15 { return (true, "보름", gold, true) }
+            return (true, "\(lu.day)", DT.inkSoft.opacity(0.75), false)
         }
-        return (nil, "", DT.inkSoft, false)
+        return (false, "", DT.inkSoft, false)
     }
 
     // 범례 — 표시(오늘·명절·절기·음력) + 점수
@@ -511,7 +493,7 @@ struct MonthlyFortuneCalendar: View {
                 .font(DT.sans(8)).foregroundStyle(DT.inkSoft)
                 .lineLimit(1).minimumScaleFactor(0.6)
             HStack(spacing: 2) {
-                if mk.icon != nil, let lu = lunarOf(d.day) {
+                if mk.showMoon, let lu = lunarOf(d.day) {
                     moonView(lu.day, 11)
                 }
                 if !mk.text.isEmpty {
@@ -697,5 +679,43 @@ struct FortuneCalendarView: View {
         if m < 1 { m = 12; y -= 1 }
         if m > 12 { m = 1; y += 1 }
         month = m; year = y
+    }
+}
+
+
+// MARK: - 달 위상 그리기 (Canvas) — 음력일 기반 실제 달 모양
+
+/// phase: 0=삭(신월) … 0.5≈보름 … 1=삭. 어두운 원반 위에 밝은 위상을 직접 그림.
+struct MoonPhase: View {
+    let phase: Double
+    let lit: Color
+    let shadow: Color
+
+    var body: some View {
+        let p = phase - floor(phase)                       // 0..1
+        let k = (1 - cos(2 * Double.pi * p)) / 2           // 밝기 비율 0..1
+        let waning = p >= 0.5                               // 하현/그믐(밝은 면 왼쪽)
+        Canvas { ctx, size in
+            let r = min(size.width, size.height) / 2
+            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            let disc = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
+            ctx.fill(disc, with: .color(shadow))           // 그림자(안 보이는) 면
+
+            // 밝은 면: 오른쪽 반원 + 터미네이터 타원
+            var litHalf = Path()
+            litHalf.move(to: CGPoint(x: c.x, y: c.y - r))
+            litHalf.addArc(center: c, radius: r, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: false)
+            litHalf.closeSubpath()
+            ctx.fill(litHalf, with: .color(lit))
+
+            let ex = r * abs(1 - 2 * k)                     // 터미네이터 타원 가로 반지름
+            if ex > 0.3 {
+                let ell = Path(ellipseIn: CGRect(x: c.x - ex, y: c.y - r, width: 2 * ex, height: 2 * r))
+                ctx.fill(ell, with: .color(k < 0.5 ? shadow : lit))  // 초승=깎기 / 상현이상=채우기
+            }
+            // 가장자리 살짝 정의
+            ctx.stroke(disc, with: .color(shadow.opacity(0.6)), lineWidth: max(0.5, r * 0.06))
+        }
+        .scaleEffect(x: waning ? -1 : 1, y: 1)             // 하현/그믐은 좌우 반전(밝은 면 왼쪽)
     }
 }

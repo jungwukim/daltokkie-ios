@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SajuKit
+import LunarKit
 
 struct SajuAnalysisSections: View {
     enum Phase { case elements, relations, timeline }
@@ -374,7 +375,7 @@ struct MonthlyFortuneCalendar: View {
                             if let d = weeks[wi][di] {
                                 cell(d)
                             } else {
-                                Color.clear.frame(maxWidth: .infinity).frame(height: 50)
+                                Color.clear.frame(maxWidth: .infinity).frame(height: 62)
                             }
                         }
                     }
@@ -398,23 +399,52 @@ struct MonthlyFortuneCalendar: View {
         return stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<$0 + 7]) }
     }
 
+    // 절기 맵 (양력 월 → [일: 절기명]) — 월당 ~2개
+    private var terms: [Int: String] { SolarTermsTable.termsInMonth(year: year, month: month) }
+    private func lunarOf(_ day: Int) -> LunarDate? { try? LunarConverter.solarToLunar(year: year, month: month, day: day) }
+
+    /// 셀 하단 마커 — 절기 우선, 그다음 음력 초하루(달 시작)/보름, 평일은 음력일
+    private func marker(_ day: Int) -> (text: String, color: Color, strong: Bool) {
+        if let t = terms[day] { return (t, DT.accent, true) }
+        if let lu = lunarOf(day) {
+            if lu.day == 1 { return ("\(lu.isLeapMonth ? "윤" : "")\(lu.month)월", dtDyn(0x8C6E3C, 0xC0A368), true) }
+            if lu.day == 15 { return ("보름", dtDyn(0x8C6E3C, 0xC0A368), true) }
+            return ("음 \(lu.day)", DT.inkSoft.opacity(0.7), false)
+        }
+        return ("", DT.inkSoft, false)
+    }
+
     private func cell(_ d: MonthlyCalendarDay) -> some View {
         let isToday = d.day == today
         let isSel = d.day == selected
-        return VStack(spacing: 1) {
-            Text("\(d.day)").font(DT.sans(9, isToday ? .bold : .regular))
-                .foregroundStyle(isToday ? DT.accent : DT.ink)
+        let mk = marker(d.day)
+        let isSat = weekday(d.day) == "토"
+        let isSun = weekday(d.day) == "일"
+        return VStack(spacing: 2) {
+            Text("\(d.day)")
+                .font(DT.sans(11, isToday ? .bold : .medium))
+                .foregroundStyle(isToday ? DT.accent : (isSun ? dtDyn(0xC0506A, 0xE08098) : (isSat ? dtDyn(0x3F6CB0, 0x6E97D2) : DT.ink)))
             Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
-                .font(DT.serif(11, .semibold)).foregroundStyle(elColor(stemElement(d.stemKorean)))
+                .font(DT.serif(12, .semibold)).foregroundStyle(elColor(stemElement(d.stemKorean)))
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Text(d.tenGod).font(DT.sans(7)).foregroundStyle(DT.inkSoft)
+            Text(d.tenGod)
+                .font(DT.sans(8)).foregroundStyle(DT.inkSoft)
                 .lineLimit(1).minimumScaleFactor(0.6)
             Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5)
+            Text(mk.text)
+                .font(DT.sans(8, mk.strong ? .semibold : .regular))
+                .foregroundStyle(mk.color)
+                .lineLimit(1).minimumScaleFactor(0.6)
         }
-        .frame(maxWidth: .infinity).frame(height: 50)
-        .background(isSel ? DT.accentSoft : (isToday ? DT.accentSoft.opacity(0.45) : Color.clear))
-        .overlay(isSel ? RoundedRectangle(cornerRadius: 6).stroke(DT.accent, lineWidth: 1) : nil)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(maxWidth: .infinity).frame(height: 62)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSel ? DT.accentSoft : (isToday ? DT.accentSoft.opacity(0.4) : scoreColor(d.overallScore).opacity(0.06)))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSel ? DT.accent : (terms[d.day] != nil ? DT.accent.opacity(0.4) : .clear), lineWidth: isSel ? 1.2 : 1)
+        )
         .contentShape(Rectangle())
         .onTapGesture { selected = (selected == d.day) ? nil : d.day }
     }
@@ -422,8 +452,19 @@ struct MonthlyFortuneCalendar: View {
     private func detail(_ d: MonthlyCalendarDay) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Rectangle().fill(DT.line).frame(height: 1).padding(.vertical, 2)
-            Text("\(month)월 \(d.day)일 (\(weekday(d.day))) · 그날의 기운")
-                .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
+            HStack(spacing: 6) {
+                Text("\(month)월 \(d.day)일 (\(weekday(d.day)))")
+                    .font(DT.sans(11, .semibold)).foregroundStyle(DT.inkSoft)
+                if let lu = lunarOf(d.day) {
+                    Text("음력 \(lu.isLeapMonth ? "윤" : "")\(lu.month).\(lu.day)")
+                        .font(DT.sans(11)).foregroundStyle(DT.inkSoft)
+                }
+                if let t = terms[d.day] {
+                    Text(t).font(DT.sans(10, .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(DT.accent).clipShape(Capsule())
+                }
+            }
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text("\(stemHanja(d.stemKorean))\(branchHanja(d.branchKorean))")
                     .font(DT.serif(20, .bold)).foregroundStyle(elColor(stemElement(d.stemKorean)))

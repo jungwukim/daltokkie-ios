@@ -26,6 +26,18 @@ public enum SolarTermsTable {
     /// 연도별 절기 엔트리 (테이블 수록 순서 유지)
     private static let byYear: [Int: [SolarTermEntry]] = load()
 
+    /// 해당 양력 월(서울 기준)에 들어오는 24절기 — [일: 절기명]. 운세 달력에 절기 표시용.
+    public static func termsInMonth(year: Int, month: Int) -> [Int: String] {
+        var out: [Int: String] = [:]
+        let cal = SajuCore.seoulCalendar
+        for entry in byYear[year] ?? [] {
+            let d = Date(timeIntervalSince1970: entry.timestampMs / 1000)
+            let c = cal.dateComponents([.year, .month, .day], from: d)
+            if c.year == year, c.month == month, let day = c.day { out[day] = entry.name }
+        }
+        return out
+    }
+
     /// 출생 시각 **이전(포함)**의 가장 최근 절(節) — getPreviousJieSolarTermByInstant (대운 역행 기산)
     public static func previousJieTerm(atOrBefore instant: Date) -> SolarTermEntry? {
         let ms = instant.timeIntervalSince1970 * 1000

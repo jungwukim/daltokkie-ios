@@ -120,10 +120,8 @@ enum AIProxy {
             for r in tr.branchRelations { relations.append("\(tr.natalPillar)와 \(r.type)") }
         }
         // 매일 다른 최고 영역 + 주말 인지 — 직장/재물 default·일요일 상사 조언 방지
-        let sortedCards = day.cards.sorted { $0.score > $1.score }
-        let topArea = sortedCards.first?.category ?? ""
-        let lowArea = sortedCards.last?.category ?? ""
         let isWeekend = (weekday == "토요일" || weekday == "일요일")
+        let (topArea, lowArea) = AppState.dailyAreas(cards: day.cards, date: day.date, isWeekend: isWeekend)
         let payload: [String: Any] = [
             "date": day.date,
             "weekday": weekday,

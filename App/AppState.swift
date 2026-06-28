@@ -140,6 +140,22 @@ final class AppState: ObservableObject {
         return bundle
     }
 
+    /// 달빛편지 영역 다양화 — '1등'만 쓰면 엔진 가중치상 직장/재물이 매일 반복되므로,
+    /// 상위 3개 영역 중 날짜 시드로 회전. 주말엔 업무영역(직장·학업) 제외(주말 충돌 방지).
+    nonisolated static func dailyAreas(cards: [DailyFortuneCard], date: String, isWeekend: Bool) -> (top: String, low: String) {
+        let sorted = cards.sorted { $0.score > $1.score }
+        guard let lowC = sorted.last else { return ("", "") }
+        var cands: [String] = Array(sorted.prefix(3)).map { $0.category }
+        if isWeekend {
+            let work: Set<String> = ["직장운", "학업운"]
+            let nonWork = cands.filter { !work.contains($0) }
+            if !nonWork.isEmpty { cands = nonWork }
+        }
+        let seed = abs(date.unicodeScalars.reduce(0) { ($0 &* 31) &+ Int($1.value) })
+        let top = cands.isEmpty ? (sorted.first?.category ?? "") : cands[seed % cands.count]
+        return (top, lowC.category)
+    }
+
     /// 오늘의 일진 payload — 콘텐츠/해석 라우트가 그날 간지를 추론(환각)하지 않도록 전달.
     /// daily-* AI 콘텐츠(오늘의 한마디·운세·할일피할일 등)의 명리 정확도용.
     func todayDailyPayload() -> [String: Any]? {
@@ -156,11 +172,9 @@ final class AppState: ObservableObject {
         let conditions: [[String: Any]] = t.cards.map {
             ["name": $0.category, "score": $0.score, "grade": $0.grade]
         }
-        let sortedCards = t.cards.sorted { $0.score > $1.score }
-        let topArea = sortedCards.first?.category ?? ""    // 실제 최고 점수 영역 (LLM이 임의 영역 못 쓰게)
-        let lowArea = sortedCards.last?.category ?? ""
         let wd = Self.weekdayNum(t.date)
         let isWeekend = (wd == 1 || wd == 7)               // 일·토
+        let (topArea, lowArea) = Self.dailyAreas(cards: t.cards, date: t.date, isWeekend: isWeekend)  // 상위 3개 회전+주말 업무 제외
         return [
             "date": t.date,
             "weekday": Self.koWeekday(t.date),
@@ -215,8 +229,8 @@ final class AppState: ObservableObject {
 
     private func heroLineCacheKey(date: String, _ p: UserProfile) -> String {
         let sig = "\(p.year).\(p.month).\(p.day).\(p.hour ?? -1).\(p.minute).\(p.gender).\(p.calendar).\(p.region)"
-        // v3: 구체형 프롬프트 배포 후 재생성(배포 전 캐시 폐기)
-        return "heroAILine.v3|\(date)|\(sig)"
+        // v4: 영역 다양화+주말 반영 적용 후 재생성
+        return "heroAILine.v4|\(date)|\(sig)"
     }
 
     /// 3줄 AI 텍스트 → MoonLetter(첫 줄=큰 글귀, 나머지=본문).

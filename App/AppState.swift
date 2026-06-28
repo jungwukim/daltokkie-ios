@@ -140,7 +140,8 @@ final class AppState: ObservableObject {
 
     private func heroLineCacheKey(date: String, _ p: UserProfile) -> String {
         let sig = "\(p.year).\(p.month).\(p.day).\(p.hour ?? -1).\(p.minute).\(p.gender).\(p.calendar).\(p.region)"
-        return "heroAILine|\(date)|\(sig)"
+        // v2: 시적 비유 → 구체적 한마디로 프롬프트 변경, 기존 캐시 무효화
+        return "heroAILine.v2|\(date)|\(sig)"
     }
 
     /// 3줄 AI 텍스트 → MoonLetter(첫 줄=큰 글귀, 나머지=본문).

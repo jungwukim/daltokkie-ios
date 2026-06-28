@@ -537,6 +537,24 @@ struct LuckyIndexDetailView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     CraftCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionTitle(text: "오늘의 운세")
+                            let t = bundle.today
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text("\(t.overallScore)").font(DT.sans(28, .bold)).foregroundStyle(DT.accent)
+                                Text("점 · \(t.overallGrade)").font(DT.sans(13)).foregroundStyle(DT.inkSoft)
+                            }
+                            ForEach(HomeConditions.from(cards: t.cards), id: \.title) { c in
+                                HStack {
+                                    Text(c.title).font(DT.sans(12, .medium)).foregroundStyle(DT.ink).frame(width: 60, alignment: .leading)
+                                    StarRatingView(value: HomeConditions.stars(c.score), size: 9)
+                                    Spacer()
+                                    Text("\(c.score)").font(DT.sans(11)).foregroundStyle(DT.inkSoft)
+                                }
+                            }
+                        }
+                    }
+                    CraftCard {
                         VStack(alignment: .leading, spacing: 12) {
                             SectionTitle(text: "5일간 행운지수 흐름")
                             LuckyLineChart(fortunes: bundle.fortunes, todayDate: bundle.today.date)
@@ -568,7 +586,7 @@ struct LuckyIndexDetailView: View {
                 .padding(DT.pagePadding)
             }
             .background(DT.bg)
-            .navigationTitle("오늘의 행운지수")
+            .navigationTitle("오늘의 운세")
             .navigationBarTitleDisplayMode(.inline)
             .dtCloseToolbar { dismiss() }
         }

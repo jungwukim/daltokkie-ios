@@ -616,7 +616,9 @@ struct LuckyIndexDetailView: View {
                     id: "daily-fortune", tone: "warm",
                     gender: p.gender, birthYear: p.year, birthMonth: p.month, birthDay: p.day,
                     birthHour: p.hour, birthMinute: p.minute,
-                    sajuResult: r, region: p.region, daily: appState.todayDailyPayload()) {
+                    sajuResult: r, region: p.region, daily: appState.todayDailyPayload(),
+                    isLunar: p.calendar == "lunar", isLeapMonth: p.isLeapMonth,
+                    useTrueSolarTime: p.useTrueSolarTime) {
                     aiText += chunk
                 }
             } catch {

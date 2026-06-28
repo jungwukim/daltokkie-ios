@@ -69,13 +69,17 @@ enum AIProxy {
         id: String, tone: String,
         gender: String, birthYear: Int, birthMonth: Int, birthDay: Int, birthHour: Int?, birthMinute: Int,
         sajuResult: FortuneTellerResult? = nil, natalChart: NatalChart? = nil,
-        region: String? = nil, timeline: [String: Any]? = nil, daily: [String: Any]? = nil
+        region: String? = nil, timeline: [String: Any]? = nil, daily: [String: Any]? = nil,
+        isLunar: Bool? = nil, isLeapMonth: Bool? = nil, useTrueSolarTime: Bool? = nil
     ) -> AsyncThrowingStream<String, Error> {
         var payload: [String: Any] = [
             "gender": gender, "birthYear": birthYear, "birthMonth": birthMonth, "birthDay": birthDay,
             "birthMinute": birthMinute, "tone": tone,
         ]
         if let h = birthHour { payload["birthHour"] = h }
+        if let v = isLunar { payload["isLunar"] = v }                       // 서버 사주 재계산(음력 정확)
+        if let v = isLeapMonth { payload["isLeapMonth"] = v }
+        if let v = useTrueSolarTime { payload["useTrueSolarTime"] = v }
         if let s = sajuResult { payload["sajuResult"] = sajuResultJSON(s) }
         if let n = natalChart { payload["natalChart"] = jsonValue(n) }
         if let tl = timeline { payload["timeline"] = tl }   // 실제 연도 대운/세운/월운

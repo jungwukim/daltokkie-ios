@@ -131,7 +131,9 @@ struct SajuDetailView: View {
                         AIProxy.content(id: id, tone: tone, gender: profile.gender, birthYear: profile.year,
                                         birthMonth: profile.month, birthDay: profile.day, birthHour: profile.hour, birthMinute: profile.minute,
                                         sajuResult: r, region: profile.region, timeline: appState.sajuTimelineJSON(),
-                                        daily: appState.todayDailyPayload())
+                                        daily: appState.todayDailyPayload(),
+                                        isLunar: profile.calendar == "lunar", isLeapMonth: profile.isLeapMonth,
+                                        useTrueSolarTime: profile.useTrueSolarTime)
                     }
                 }
                 .padding(.horizontal, DT.pagePadding)

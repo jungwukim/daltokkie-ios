@@ -31,6 +31,20 @@
 
 ## 작업 히스토리
 
+#### 60. AI 콘텐츠 명리/점성/자미 정확도 전수 감사 + 1차 수정 (2026-06-28)
+- **요청**: "AI가 엔진 계산이 아니라 환각·추측으로 만드는 콘텐츠 전부 찾아 고쳐라" (사주·자미·점성)
+- **감사(Explore 4도메인 병렬)**: 공통 근본 원인 = **온디바이스/서버 엔진이 정확히 계산하는데 LLM에 안 넘겨 다시 추측**. 발견:
+  - 사주: `content/[id]` 라우트가 `analysis`(십성·용신·격국·신살·대운·월간달력)를 안 받아 `formatSajuForAI`가 "LLM이 알아서 분석" 폴백 → ~20개 콘텐츠 환각/부분. lucky-day·fortune-calendar는 날짜별 일진까지 LLM이 지어냄
+  - 자미: `ziwei-sihua` 생년사화를 포맷터에 안 넘김(환각). liunian/daxian/monthly 등은 라우트가 `new Date().getFullYear()`로 앱 currentYear 무시
+  - 점성: `natal-transit`·`natal-monthly`는 현재 트랜짓(행성 위치) 계산이 없어 LLM이 환각
+  - 멀티: life-roadmap/graph 전체 대운이 포맷터에 없음(현재 대운만)
+- **1차 수정(이번 커밋)**:
+  - **사주: 서버가 정통 엔진으로 풀분석 재계산** — 라우트 saju 분기에서 `ftCalculateSaju`(음력·진태양시·지역 정확 처리)+`ftFullAnalysis` → `formatSajuForAI(analysis)`. 앱은 `isLunar/isLeapMonth/useTrueSolarTime` 전달. → 십성·용신·격국·신살 전부 정확
+  - **포맷터**: 전체 대운 타임라인 추가(life-roadmap/age-guide/전환점), lucky-day·fortune-calendar엔 **실제 월간 달력(일별 간지·점수)** 주입 → 날짜 환각 제거
+  - **자미·멀티 연도 버그**: `currentYear ?? new Date()`로 앱 시점 존중
+- **검증**: 서버 tsc + **골든 236건 전부 통과**(엔진 무결성). 앱 빌드 ✅
+- **남은 2차(다음)**: 자미 생년사화 포맷터 주입, 점성 트랜짓 계산 신규 구현(natal-transit·natal-monthly). saju-api 재배포 필요
+
 #### 59. daily AI 콘텐츠 일진 정확도 + 홈 자세히 보기 = 오늘의 운세 (2026-06-28)
 - **배경**: 사주 "세부 해석"의 daily 콘텐츠(오늘의 한마디·오늘의 운세·할일피할일 등)가 `/api/saju/content/[id]`에서 **그날 일진(日辰)을 계산하지 않아** LLM이 오늘 기운을 추론(환각) → 명리 정확도 미흡. (원국 팔자·십성·용신은 엔진 정통 계산, '오늘' 시점만 부정확)
 - **해결(앱→서버 데이터 전달)**: 앱 온디바이스 `DailyFortuneEngine`이 계산한 정확한 일진(일주·십성·12운성·점수·영역 컨디션·합충·신살)을 `AppState.todayDailyPayload()`로 만들어 `AIProxy.content(daily:)`로 전송. 서버 `now-context.buildDailyJinContext()`가 이를 프롬프트에 주입(콘텐츠 라우트 `daily` 스키마 추가). → **모든 daily-* 콘텐츠가 정확한 일진 기반**

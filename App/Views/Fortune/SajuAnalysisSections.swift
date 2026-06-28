@@ -375,7 +375,7 @@ struct MonthlyFortuneCalendar: View {
                             if let d = weeks[wi][di] {
                                 cell(d)
                             } else {
-                                Color.clear.frame(maxWidth: .infinity).frame(height: 62)
+                                Color.clear.frame(maxWidth: .infinity).frame(height: 52)
                             }
                         }
                     }
@@ -430,17 +430,19 @@ struct MonthlyFortuneCalendar: View {
             Text(d.tenGod)
                 .font(DT.sans(8)).foregroundStyle(DT.inkSoft)
                 .lineLimit(1).minimumScaleFactor(0.6)
-            Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5)
             Text(mk.text)
                 .font(DT.sans(8, mk.strong ? .semibold : .regular))
                 .foregroundStyle(mk.color)
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
-        .frame(maxWidth: .infinity).frame(height: 62)
+        .frame(maxWidth: .infinity).frame(height: 52)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(isSel ? DT.accentSoft : (isToday ? DT.accentSoft.opacity(0.4) : scoreColor(d.overallScore).opacity(0.06)))
         )
+        .overlay(alignment: .topTrailing) {
+            Circle().fill(scoreColor(d.overallScore)).frame(width: 5, height: 5).padding(4)
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(isSel ? DT.accent : (terms[d.day] != nil ? DT.accent.opacity(0.4) : .clear), lineWidth: isSel ? 1.2 : 1)

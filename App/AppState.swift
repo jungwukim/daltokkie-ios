@@ -163,6 +163,10 @@ final class AppState: ObservableObject {
             "conditions": conditions,
             "relations": relations,
             "sinsals": sinsals,
+            // 엔진 계산 행운 정보 — AI 행운 포인트가 지어내지 않고 이 값을 쓰도록(화면 카드와 일치)
+            "luckyHour": bundle.luckyHours.lucky,
+            "unluckyHour": bundle.luckyHours.unlucky,
+            "luckyColor": bundle.luckyItems.color,
         ]
     }
 

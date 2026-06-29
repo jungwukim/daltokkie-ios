@@ -32,10 +32,13 @@ struct RegionPickerSheet: View {
                                 selection = c.name
                                 dismiss()
                             } label: {
-                                HStack {
+                                HStack(spacing: 6) {
                                     Text(c.name)
                                         .font(DT.sans(15))
                                         .foregroundStyle(DT.ink)
+                                    Text(c.country)
+                                        .font(DT.sans(11))
+                                        .foregroundStyle(DT.inkSoft)
                                     Spacer()
                                     if c.name == selection {
                                         Image(systemName: "checkmark")

@@ -68,7 +68,7 @@ struct MyView: View {
                     CraftCard {
                         VStack(alignment: .leading, spacing: 10) {
                             SectionTitle(text: p.name.isEmpty ? "내 정보" : "\(p.name)님의 정보")
-                            infoRow("생년월일", "\(p.calendar == "lunar" ? "음력 " : "")\(p.year)년 \(p.month)월 \(p.day)일\(p.isLeapMonth ? " (윤달)" : "")")
+                            infoRow("생년월일", "\(p.calendar == "lunar" ? "음력" : "양력") \(p.year)년 \(p.month)월 \(p.day)일\(p.isLeapMonth ? " (윤달)" : "")")
                             infoRow("태어난 시간", p.hour.map { String(format: "%02d:%02d", $0, p.minute) } ?? "모름")
                             infoRow("성별", p.gender == "male" ? "남성" : "여성")
                             regionRow(p.region)
@@ -93,7 +93,7 @@ struct MyView: View {
                     }
                 }
 
-                Text("모든 운세 계산은 기기 안에서 이뤄집니다.\n생년월일 정보는 이 기기에만 저장돼요.")
+                Text("운세 계산은 기기 안에서 이뤄지고, 입력 정보는 이 기기에만 저장됩니다.\nAI 심층 해석을 볼 때만 해석 생성을 위해 생년월일시·성별·출생지가 서버로 전송돼요. (이름·기기 정보·위치는 전송하지 않으며 서버에 저장하지 않습니다.)")
                     .font(DT.sans(11))
                     .foregroundStyle(DT.inkSoft)
                     .multilineTextAlignment(.center)
@@ -128,7 +128,9 @@ struct MyView: View {
                 showRegionPicker = true
             } label: {
                 HStack(spacing: 4) {
-                    Text(region).font(DT.sans(13, .medium)).foregroundStyle(DT.accent)
+                    let country = RegionCoords.country(for: region)
+                    Text(country.isEmpty ? region : "\(region) · \(country)")
+                        .font(DT.sans(13, .medium)).foregroundStyle(DT.accent)
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: 10)).foregroundStyle(DT.inkSoft)
                 }
             }

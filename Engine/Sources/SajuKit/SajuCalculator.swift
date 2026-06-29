@@ -65,6 +65,18 @@ public enum SajuCalculator {
         return offsetMinutesTruncated(seoul.secondsFromGMT(for: approxUtc))
     }
 
+    /// 비한국 출생지용 타임존 오프셋 (분) — 해당 타임존의 벽시계 시각 기준 실제 오프셋(DST 반영)
+    static func timezoneOffsetMin(tzId: String, year: Int, month: Int, day: Int, hour: Int, minute: Int) -> Int {
+        guard let tz = TimeZone(identifier: tzId) else { return 0 }
+        var localCal = Calendar(identifier: .gregorian)
+        localCal.timeZone = tz
+        var comps = DateComponents()
+        comps.year = year; comps.month = month; comps.day = day
+        comps.hour = hour; comps.minute = minute
+        guard let date = localCal.date(from: comps) else { return 0 }
+        return offsetMinutesTruncated(tz.secondsFromGMT(for: date))
+    }
+
     // MARK: - 메인 (ftCalculateSaju)
 
     public static func calculate(
@@ -75,7 +87,9 @@ public enum SajuCalculator {
         isLeapMonth: Bool = false,
         useTrueSolarTime: Bool = true,
         region: String = "서울",
-        minute: Int = 0
+        minute: Int = 0,
+        overrideTimezone: String? = nil,
+        overrideLongitude: Double? = nil
     ) throws -> FortuneTellerResult {
         let ftGender = gender == "male" ? "male" : "female"
 
@@ -88,16 +102,23 @@ public enum SajuCalculator {
             solarDay = solar.day
         }
 
-        // KDT 보정 (항상) — 입력 원본 y/m/d 기준 (TS 원본과 동일하게 음력 숫자 그대로 사용)
+        // KDT 보정 (항상) — TS 엔진과 동일. 비한국 모던 출생은 0이라 무영향.
         let dstDelta = koreanDstDelta(year: year, month: month, day: day, hour: hour ?? 12)
         var deltaMin = -dstDelta
 
         if useTrueSolarTime {
             // deltaMin = -tzOffset + longitude×4 + EoT + 2
-            let regionLng = SajuTables.regionLongitudes[region] ?? 126.98
+            // 비한국 출생지면 출생지 타임존·경도로 진태양시 보정(서버 REGION_TIMEZONES 룩업과 동일 결과).
+            // 한국(override 없음)은 기존 서울 경로 그대로 — 골든 픽스처/정통 재현 유지.
             let eot = equationOfTime(year: year, month: month, day: day)
-            let tzOffsetMin = timezoneOffsetMin(year: year, month: month, day: day, hour: hour ?? 12, minute: minute)
-            deltaMin = -tzOffsetMin + jsRound(regionLng * 4) + eot + 2
+            if let tzId = overrideTimezone, let lng = overrideLongitude {
+                let tzOffsetMin = timezoneOffsetMin(tzId: tzId, year: year, month: month, day: day, hour: hour ?? 12, minute: minute)
+                deltaMin = -tzOffsetMin + jsRound(lng * 4) + eot + 2
+            } else {
+                let regionLng = SajuTables.regionLongitudes[region] ?? 126.98
+                let tzOffsetMin = timezoneOffsetMin(year: year, month: month, day: day, hour: hour ?? 12, minute: minute)
+                deltaMin = -tzOffsetMin + jsRound(regionLng * 4) + eot + 2
+            }
         }
 
         let h = hour ?? 12

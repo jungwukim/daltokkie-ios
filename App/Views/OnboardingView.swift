@@ -15,6 +15,8 @@ struct OnboardingView: View {
     @State private var gender = "female"
     @State private var calendarType = "solar"
     @State private var isLeapMonth = false
+    @State private var region = "서울"
+    @State private var showRegionPicker = false
 
     private let years = Array(1920...2025).reversed()
 
@@ -83,6 +85,22 @@ struct OnboardingView: View {
                                 .tint(DT.ink)
                             }
 
+                            field("출생 지역") {
+                                Button {
+                                    showRegionPicker = true
+                                } label: {
+                                    HStack {
+                                        Text(region)
+                                            .font(DT.sans(15))
+                                            .foregroundStyle(DT.ink)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(DT.inkSoft)
+                                    }
+                                }
+                            }
+
                             Toggle("태어난 시간을 알아요", isOn: $knowsTime)
                                 .font(DT.sans(14))
                                 .tint(DT.accent)
@@ -114,6 +132,7 @@ struct OnboardingView: View {
                         profile.minute = knowsTime ? minute : 0
                         profile.calendar = calendarType
                         profile.isLeapMonth = calendarType == "lunar" && isLeapMonth
+                        profile.region = region
                         appState.profile = profile
                     } label: {
                         Text("운세 보러 가기")
@@ -128,6 +147,9 @@ struct OnboardingView: View {
                 .padding(.horizontal, DT.pagePadding)
                 .padding(.bottom, 40)
             }
+        }
+        .sheet(isPresented: $showRegionPicker) {
+            RegionPickerSheet(selection: $region)
         }
     }
 

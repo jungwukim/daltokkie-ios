@@ -25,11 +25,22 @@
 ## 현재 상태
 
 - **브랜치**: main
-- **최신 빌드**: 성공 (2026-06-28, iPhone 16 Pro). 최근: **운세 달력 UI 개선**(음력·절기·명절·달 위상 Canvas·범례, #63)·**daily 콘텐츠 일관성·다양성·정확도 + 출력 레벨 검증**(#62, DEC-019)·AI 콘텐츠 정확도 전수 감사(DEC-019/#60·61)·운세 달력 상세화(#57)·사주 명식표(DEC-018)
+- **최신 빌드**: 성공 (2026-06-29, iPhone 15). 최근: **글로벌 출생지 지원**(세계 87도시·타임존·진태양시, #64, DEC-020)·운세 달력 UI 개선(#63)·daily 콘텐츠 일관성·정확도 + 출력 레벨 검증(#62, DEC-019)·AI 콘텐츠 정확도 전수 감사(#60·61)·사주 명식표(DEC-018)
 - **엔진 테스트**: 13건 통과(iOS) / 서버 골든 236건 통과. (단, **daily-fortune 픽스처는 자체 알고리즘 재생성** — saju-api 비트재현 아님, DEC-014. 코어 사주/천체력/자미 픽스처는 정통 재현 유지)
 - **AI 서버**: `saju-api`(daltokkie.vercel.app) 배포·동작 중. daily 콘텐츠는 엔진값 주입(일진·달력·행운값·topArea·주말) + 톤 warm·날짜별 캐시로 화면 간 일관. **남은 과제: daily-one-liner가 BASE_KNOWLEDGE 장문 강제로 3줄 미반영(제거 또는 BASE 예외 결정 대기)**
 
 ## 작업 히스토리
+
+#### 64. 글로벌 출생지 지원 — 세계 87개 도시 + 타임존·진태양시 (2026-06-29)
+- **요청**: "글로벌인데 왜 한국 도시만 있어?" — 출생지 한국 20도시뿐·타임존 `Asia/Seoul` 하드코딩으로 비한국 출생자의 점성/사주가 KST 오해석
+- **데이터**: `RegionCoords`를 87개 도시(한국 20+세계 67)로 확장 — 이름·위경도·IANA 타임존·대륙 그룹. 한국 도시 이름/경도는 사주 골든 정합 유지
+- **점성술(natal)**: `ensureNatal`이 `RegionCoords.tz` 전달(서울 하드코딩 제거)
+- **사주**: 비한국 출생지만 `SajuCalculator.calculate`에 `overrideTimezone`/`overrideLongitude` 전달 → 진태양시를 출생지 타임존·경도로 보정. **한국 경로(서울 tz·KDT·골든)는 무손상**. TS 엔진과 동일하게 KDT는 항상 적용
+- **UI**: 검색형 `RegionPickerSheet` 신설(대륙 섹션·검색) → 온보딩 출생지 필드 추가 + 마이 페이지 연결
+- **서버**: `REGION_DATA` 마스터 테이블(앱과 1:1 정합) 신설, TIMEZONES/COORDS/GROUPS 파생·LONGITUDES는 한국 골든 고정+세계 파생. content 라우트 natal 재계산에 region 좌표·타임존 주입
+- **검증(출력 레벨)**: 진태양시 — 서울 -30분(불변)·뉴욕 -54분·런던 -59분(시주 乙未→甲午)·시드니 +7분. 골든 iOS 13·서버 236 통과(한국 불변). `vercel --prod` 배포 후 뉴욕 출생 → HTTP 200 + 사주 콘텐츠 스트리밍
+- **파일**: `App/Models/UserProfile.swift`·`App/AppState.swift`·`App/Views/Misc/RegionPicker.swift`(신설)·`OnboardingView.swift`·`TalismanMyViews.swift`·`Engine/Sources/SajuKit/SajuCalculator.swift`; saju-api `lib/saju/constants.ts`·`app/api/saju/content/[id]/route.ts`(배포·푸시 완료 `fb1b5f4`)
+- **DEC-020** 참조
 
 #### 63. 운세 달력 UI 개선 — 음력·절기·명절·달 위상 + 가독성 (2026-06-28)
 - **요청**: 달력을 직관적·예쁘게·간결하게, 음력·절기 등 의미있는 날 표시

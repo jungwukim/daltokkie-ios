@@ -146,6 +146,11 @@ VSOP87B(J2000 일심 구면) → 직교 → 지심 변환 → 황도 세차(J200
 ```
 > 트랜짓 = `calculateNatal(오늘 날짜)` → 그 시점 행성 위치(서버가 점성 트랜짓 콘텐츠에 사용).
 
+**출생지 데이터 계약 (글로벌, DEC-020)**: `RegionCoords`(iOS `App/Models/UserProfile.swift`)와 `REGION_DATA`(서버 `lib/saju/constants.ts`)가 **세계 87개 도시**(이름·위경도·IANA 타임존·대륙 그룹)를 **1:1 정합**으로 보유. 흐름:
+> - **점성(natal)**: `ensureNatal()` → `RegionCoords.tz(for:)`·`coords(for:)`를 `NatalEngine`에 전달(출생지 타임존으로 ASC/MC 정확).
+> - **사주**: `ensureSaju()` → 비한국 출생지면 `SajuCalculator.calculate(overrideTimezone:overrideLongitude:)`로 진태양시를 출생지 기준 보정. **한국 도시는 기존 서울 tz·KDT·골든 경로 그대로**(분기 없음).
+> - 앱은 `region`(도시명)만 서버로 전송 → 서버가 `REGION_DATA`에서 tz·좌표·경도 자체 룩업(사주 재계산·natal 재계산 모두 동일 값). 사주 경도는 한국만 골든값 고정.
+
 ### 3.4 ZiweiKit — 자미두수
 **`ZiweiEngine` 명반 구성**:
 ```

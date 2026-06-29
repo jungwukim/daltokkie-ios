@@ -208,6 +208,17 @@
 
 ---
 
+### DEC-020: 글로벌 출생지 지원 — 세계 87개 도시 큐레이션 (2026-06-29)
+
+**결정**: 앱이 글로벌 대상임에도 출생지가 한국 20개 도시뿐이고 타임존이 `Asia/Seoul`로 하드코딩되어 비한국 출생자의 점성/사주가 KST로 잘못 해석되던 문제를 해결. **세계 주요 87개 도시**(한국 20 + 세계 67)를 (이름·위경도·IANA 타임존·대륙 그룹)으로 큐레이션·번들. ① 점성술(natal)은 `RegionCoords.tz`를 `NatalEngine`에 전달(서울 하드코딩 제거), ② 사주는 **비한국 출생지만** `overrideTimezone`/`overrideLongitude`로 진태양시 보정 — 한국 경로(서울 tz·KDT·골든 픽스처)는 무손상 유지, ③ 서버는 `REGION_DATA` 마스터 테이블(앱과 1:1 정합)에서 타임존·좌표·그룹 파생, 사주 경도는 한국 골든값 고정·세계는 파생, content 라우트 natal 재계산에 region 좌표·타임존 주입. 검색형 지역 피커를 온보딩·마이 공용으로 신설.
+**근거**: 사용자 지적 — "글로벌인데 왜 한국 도시만 있어?". 출생시각을 출생지 타임존으로 해석하지 않으면 ASC/MC(점성)와 진태양시(사주)가 전부 틀어짐. 큐레이션 방식 채택(전수 지오코딩 대비 범위 명확·오프라인·앱스토어 심사 단순).
+**대안 검토**: ① 전체 지오코딩(도시 자유입력+좌표 API) — 오프라인 불가·심사 복잡으로 반려 ② 타임존 버그만 우선 수정 — 도시 목록 글로벌화 없이는 반쪽으로 반려 ③ 앱이 타임존을 payload로 전송 — 서버가 region→tz 룩업(REGION_DATA)으로 자체 해결 가능해 불필요
+**검증(출력 레벨, DEC-019 원칙)**: 동일 벽시계(1990-06-15 14:30) 진태양시 — 서울 -30분(기존 불변)·뉴욕 -54분·런던 -59분(시주 乙未→甲午로 바뀜)·시드니 +7분. 엔진 골든 13건(iOS)·vitest 236건(서버) 통과로 한국 경로 불변 확인. `vercel --prod` 배포 후 `daltokkie.vercel.app` 뉴욕 출생 요청 → HTTP 200 + 실제 사주 콘텐츠 스트리밍.
+**관련 파일**: iOS `App/Models/UserProfile.swift`(RegionCoords 87도시·tz·grouped), `App/AppState.swift`(ensureNatal tz·ensureSaju override), `App/Views/Misc/RegionPicker.swift`(신설), `App/Views/OnboardingView.swift`·`TalismanMyViews.swift`(피커 연결), `Engine/Sources/SajuKit/SajuCalculator.swift`(override 파라미터·timezoneOffsetMin tzId판); saju-api `lib/saju/constants.ts`(REGION_DATA/COORDS/TIMEZONES/GROUPS), `app/api/saju/content/[id]/route.ts`(natal 재계산 region 주입)
+**관련**: DEC-016(온디바이스 렌더), DEC-019(엔진값 주입·출력 검증)
+
+---
+
 ## 결정 템플릿
 
 새 결정 추가 시 아래 형식 사용:

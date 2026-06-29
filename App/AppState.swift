@@ -74,12 +74,16 @@ final class AppState: ObservableObject {
         if let cached = sajuResult { return cached }
         guard let p = profile else { return nil }
         do {
+            // 비한국 출생지면 해당 지역 타임존·경도로 진태양시 보정(한국 도시는 기존 KST 경로 유지)
+            let nonKorea = !RegionCoords.isKorea(p.region)
             let r = try SajuCalculator.calculate(
                 year: p.year, month: p.month, day: p.day,
                 hour: p.hour, gender: p.gender,
                 calendar: p.calendar, isLeapMonth: p.isLeapMonth,
                 useTrueSolarTime: p.useTrueSolarTime, region: p.region,
-                minute: p.minute
+                minute: p.minute,
+                overrideTimezone: nonKorea ? RegionCoords.tz(for: p.region) : nil,
+                overrideLongitude: nonKorea ? RegionCoords.coords(for: p.region).lon : nil
             )
             sajuResult = r
             return r
@@ -340,7 +344,7 @@ final class AppState: ObservableObject {
                 hour: p.hour ?? 12, minute: p.minute,
                 latitude: geo.lat, longitude: geo.lon,
                 unknownTime: p.hour == nil,
-                timezone: "Asia/Seoul"
+                timezone: RegionCoords.tz(for: p.region)
             ), houseSystem: "W", trueNode: true)
             natalChart = chart
             return chart

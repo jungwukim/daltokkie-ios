@@ -53,6 +53,7 @@ struct TalismanView: View {
 struct MyView: View {
     @EnvironmentObject var appState: AppState
     @State private var confirmReset = false
+    @State private var showRegionPicker = false
 
     var body: some View {
         ScrollView {
@@ -123,10 +124,8 @@ struct MyView: View {
             Text("출생 지역")
                 .font(DT.sans(12)).foregroundStyle(DT.inkSoft)
                 .frame(width: 88, alignment: .leading)
-            Menu {
-                ForEach(RegionCoords.names, id: \.self) { name in
-                    Button(name) { setRegion(name) }
-                }
+            Button {
+                showRegionPicker = true
             } label: {
                 HStack(spacing: 4) {
                     Text(region).font(DT.sans(13, .medium)).foregroundStyle(DT.accent)
@@ -134,6 +133,12 @@ struct MyView: View {
                 }
             }
             Spacer()
+        }
+        .sheet(isPresented: $showRegionPicker) {
+            RegionPickerSheet(selection: Binding(
+                get: { appState.profile?.region ?? "서울" },
+                set: { setRegion($0) }
+            ))
         }
     }
 

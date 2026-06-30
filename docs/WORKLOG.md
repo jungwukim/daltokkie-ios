@@ -25,11 +25,24 @@
 ## 현재 상태
 
 - **브랜치**: main
-- **최신 빌드**: 성공 (2026-06-29, iPhone 15). 최근: **글로벌 출생지 지원**(세계 87도시·타임존·진태양시, #64, DEC-020)·운세 달력 UI 개선(#63)·daily 콘텐츠 일관성·정확도 + 출력 레벨 검증(#62, DEC-019)·AI 콘텐츠 정확도 전수 감사(#60·61)·사주 명식표(DEC-018)
+- **최신 빌드**: 성공 (2026-07-01, iPhone 15). 최근: **개인정보처리방침 인앱 임베딩 + 앱스토어 심사 규정 조사**(#66)·마이 정보 표기+보안 감사(#65)·글로벌 출생지 지원(세계 87도시·타임존·진태양시, #64, DEC-020)·운세 달력 UI 개선(#63)·daily 콘텐츠 일관성·정확도 + 출력 레벨 검증(#62, DEC-019)
+- **App Store 제출 준비**: 개인정보처리방침 = 모든 앱 필수(5.1.1) — 인앱 접근 완료, **공개 URL 호스팅 미완**. 제3자 AI 전송 동의 모달(5.1.2) **미구현(필수)**. 이용약관/EULA는 불필요. (상세 #66)
 - **엔진 테스트**: 13건 통과(iOS) / 서버 골든 236건 통과. (단, **daily-fortune 픽스처는 자체 알고리즘 재생성** — saju-api 비트재현 아님, DEC-014. 코어 사주/천체력/자미 픽스처는 정통 재현 유지)
 - **AI 서버**: `saju-api`(daltokkie.vercel.app) 배포·동작 중. daily 콘텐츠는 엔진값 주입(일진·달력·행운값·topArea·주말) + 톤 warm·날짜별 캐시로 화면 간 일관. **남은 과제: daily-one-liner가 BASE_KNOWLEDGE 장문 강제로 3줄 미반영(제거 또는 BASE 예외 결정 대기)**
 
 ## 작업 히스토리
+
+#### 66. App Store 심사 규정 조사 + 개인정보처리방침 인앱 임베딩 (2026-07-01)
+- **요청**: ① 개인정보·이용약관 등 앱스토어 심사 규정 조사 ② 개인정보처리방침을 웹페이지로 임베딩해 인앱 브라우징
+- **규정 조사(공식 App Review Guidelines, 2026-06-09 개정 반영)**:
+  - **개인정보처리방침 = 모든 앱 필수**(5.1.1(i)) — App Store Connect 메타데이터 URL **+ 앱 내 쉽게 접근 가능** 양쪽 필요. 수집 항목·이용·보유/삭제·동의 철회 방법 명시
+  - **제3자 AI 전송 = 명시적 동의 필수**(5.1.2(i), "including with third-party AI ... obtain explicit permission before") → AI 해석 최초 사용 동의 모달은 *권장이 아니라 사실상 필수*
+  - **이용약관/EULA = 의무 아님** — 구독·계정 없으므로 비해당. 미작성 시 Apple 표준 EULA 자동 적용
+  - **4.3 점술 카테고리** — 신규 제출은 "meaningfully different/improved" 입증 필요(천체력 자체구현·한국 사주 특화·진태양시 글로벌 보정 → App Review Notes 기재 권장)
+- **인앱 임베딩**: `App/Resources/privacy.html`(PRIVACY.md 전문 한/영, DT 팔레트·`prefers-color-scheme` 다크 대응·safe-area), `BundledWebView`(WKWebView 래퍼·`isOpaque=false`)+`DocumentSheet` 신설, 마이 설정 카드에 "개인정보처리방침" 행 → 시트 브라우징. **5.1.1 "앱 내 접근" 요건 외부 호스팅 없이 충족**
+- **검증**: BUILD SUCCEEDED(iPhone 15), `privacy.html` 번들 루트 포함 확인, 시뮬 실행
+- **남은 권고**: ① App Store Connect용 Privacy Policy URL 공개 호스팅(GitHub Pages 등) ② AI 해석 최초 사용 동의 모달(5.1.2 필수)
+- **파일**: `App/Resources/privacy.html`(신설)·`App/Views/Misc/WebPageView.swift`(신설)·`App/Views/Misc/TalismanMyViews.swift`
 
 #### 65. 마이 정보 표기 보완 + 개인정보 보안 감사 (2026-06-29)
 - **요청**: 내 정보에 생년월일 양/음력·출생지 국가 미표시 / 개인정보 보관·전송·서버저장 여부 확인

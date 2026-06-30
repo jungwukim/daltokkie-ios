@@ -54,6 +54,7 @@ struct MyView: View {
     @EnvironmentObject var appState: AppState
     @State private var confirmReset = false
     @State private var showRegionPicker = false
+    @State private var showPrivacy = false
 
     var body: some View {
         ScrollView {
@@ -90,6 +91,20 @@ struct MyView: View {
                             Label("생년월일 다시 입력하기", systemImage: "arrow.counterclockwise")
                                 .font(DT.sans(14))
                         }
+                        Divider().overlay(DT.line)
+                        Button {
+                            showPrivacy = true
+                        } label: {
+                            HStack {
+                                Label("개인정보처리방침", systemImage: "lock.shield")
+                                    .font(DT.sans(14))
+                                    .foregroundStyle(DT.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(DT.inkSoft)
+                            }
+                        }
                     }
                 }
 
@@ -110,6 +125,9 @@ struct MyView: View {
                 appState.profile = nil
             }
             Button("취소", role: .cancel) {}
+        }
+        .sheet(isPresented: $showPrivacy) {
+            DocumentSheet(title: "개인정보처리방침", resource: "privacy")
         }
     }
 

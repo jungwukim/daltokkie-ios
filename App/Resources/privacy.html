@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>개인정보처리방침 · 달토끼</title>
+<style>
+  :root {
+    --bg: #F8F2E8;
+    --card: #FAF6EE;
+    --accent: #D4789C;
+    --ink: #2A2520;
+    --ink-soft: #8B7E6A;
+    --line: #E8DCC4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171E;
+      --card: #20222D;
+      --accent: #E08CAC;
+      --ink: #F1EBE1;
+      --ink-soft: #A99C88;
+      --line: #33363F;
+    }
+  }
+  * { box-sizing: border-box; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    padding: 20px 18px calc(40px + env(safe-area-inset-bottom));
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .meta {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: 0 0 18px;
+    line-height: 1.5;
+  }
+  .meta b { color: var(--ink); font-weight: 600; }
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 26px 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .lang-divider {
+    margin: 34px 0 0;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+  }
+  p { margin: 0 0 10px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin: 0 0 6px; }
+  strong { font-weight: 600; }
+  a { color: var(--accent); text-decoration: none; }
+  .note {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+  .accent { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>달토끼 개인정보처리방침</h1>
+<p class="meta">
+  <b>시행일</b> 2026-06-29 · <b>앱</b> 달토끼 (DalTokkie), iOS<br>
+  <b>문의</b> <a href="mailto:jungwu.kim@gmail.com">jungwu.kim@gmail.com</a>
+</p>
+
+<h2>1. 개요</h2>
+<p>달토끼는 사용자가 입력한 생년월일시 등을 기반으로 사주·점성술·자미두수·타로 운세를 제공하는 앱입니다. 모든 핵심 운세 <strong>계산은 사용자의 기기 안에서</strong> 수행되며, 입력 정보는 <strong>기기에만 저장</strong>됩니다. 별도의 회원가입·로그인·계정이 없습니다.</p>
+
+<h2>2. 수집·이용하는 정보</h2>
+<p>사용자가 직접 입력하는 정보:</p>
+<ul>
+  <li><strong>이름</strong>(선택) — 화면 표시용. <strong>기기에만 저장되며 외부로 전송되지 않습니다.</strong></li>
+  <li><strong>생년월일·태어난 시간</strong>(시간은 선택) — 운세 계산용.</li>
+  <li><strong>성별</strong> — 운세 계산용.</li>
+  <li><strong>출생 지역</strong>(도시) — 진태양시·점성 좌표 보정용.</li>
+</ul>
+<p>수집하지 <strong>않는</strong> 정보:</p>
+<ul>
+  <li>위치정보(GPS), 연락처, 사진, 마이크, 기기 식별자(UDID·광고 식별자), 로그인 정보, 결제 정보.</li>
+  <li>사용 분석·추적(advertising/analytics) 데이터.</li>
+</ul>
+
+<h2>3. 정보의 저장</h2>
+<ul>
+  <li>입력 정보는 iOS의 앱 전용 저장소(<code>UserDefaults</code>)에 저장되며, 기기 잠금 시 iOS 데이터 보호로 암호화됩니다.</li>
+  <li>마이 → “생년월일 다시 입력하기”로 언제든 삭제할 수 있으며, 앱 삭제 시 모든 정보가 함께 삭제됩니다.</li>
+</ul>
+
+<h2>4. 제3자 전송 (AI 심층 해석 기능 사용 시)</h2>
+<p>AI 심층 해석을 요청할 때에 한해, 해석 생성을 위해 <strong>생년월일시·성별·출생 지역과 계산된 명식(사주/점성/자미) 데이터</strong>가 다음으로 전송됩니다.</p>
+<ul>
+  <li><strong>달토끼 해석 서버</strong>(<code>daltokkie.vercel.app</code>, HTTPS 암호화): 요청 처리를 위한 중계 역할만 하며, <strong>어떠한 사용자 정보도 데이터베이스·파일에 저장하지 않습니다(무상태/stateless).</strong></li>
+  <li><strong>OpenAI</strong>(<code>api.openai.com</code>): 해석 문구 생성을 위해 위 정보가 프롬프트에 포함되어 전달됩니다. OpenAI는 API 데이터를 모델 학습에 사용하지 않으며, 오·남용 모니터링 목적으로 최대 30일간 보관 후 삭제합니다(OpenAI 정책에 따름).</li>
+  <li><strong>전송되지 않는 항목:</strong> 이름, 기기 식별자, 위치(GPS), 연락처.</li>
+  <li>전송되는 정보에는 이름·계정·기기 식별자가 포함되지 않으므로 <strong>특정 개인을 직접 식별하지 않습니다.</strong></li>
+</ul>
+
+<h2>5. 정보를 이용하는 목적</h2>
+<ul>
+  <li>사주·점성술·자미두수·타로 운세 계산 및 AI 해석 문구 생성(앱 기능 제공).</li>
+  <li>광고·마케팅·프로파일링·제3자 판매에 <strong>이용하지 않습니다.</strong></li>
+</ul>
+
+<h2>6. 보유 기간</h2>
+<ul>
+  <li>기기 내 정보: 사용자가 삭제하거나 앱을 삭제할 때까지.</li>
+  <li>해석 서버: 보관하지 않음(요청 처리 후 즉시 소멸).</li>
+  <li>OpenAI: 해당 사업자 정책에 따라 최대 30일.</li>
+</ul>
+
+<h2>7. 이용자의 권리</h2>
+<ul>
+  <li>입력 정보의 열람·수정·삭제는 앱 내에서 직접 가능합니다(마이 화면).</li>
+  <li>기타 문의·요청은 위 이메일로 연락해 주세요.</li>
+</ul>
+
+<h2>8. 아동의 개인정보</h2>
+<p>본 앱은 만 14세 미만 아동을 대상으로 하지 않으며, 아동의 정보를 고의로 수집하지 않습니다.</p>
+
+<h2>9. 방침 변경</h2>
+<p>본 방침이 변경되면 앱 또는 본 페이지를 통해 시행일과 함께 고지합니다.</p>
+
+<h2>10. 면책</h2>
+<p>운세 해석은 오락·참고 목적이며, 의료·법률·재무 등 전문적 조언을 대체하지 않습니다.</p>
+
+<div class="lang-divider"></div>
+
+<h1>DalTokkie Privacy Policy</h1>
+<p class="meta">
+  <b>Effective date</b> 2026-06-29 · <b>App</b> DalTokkie, iOS<br>
+  <b>Contact</b> <a href="mailto:jungwu.kim@gmail.com">jungwu.kim@gmail.com</a>
+</p>
+
+<h2>1. Overview</h2>
+<p>DalTokkie provides Korean Saju, Western astrology, Ziwei Doushu, and tarot readings based on the user's birth information. All core calculations run <strong>on your device</strong>, and your input is <strong>stored only on your device</strong>. There is no sign-up, login, or account.</p>
+
+<h2>2. Information we collect &amp; use</h2>
+<p>Entered by the user:</p>
+<ul>
+  <li><strong>Name</strong> (optional) — for on-screen display only; <strong>stored on device, never transmitted.</strong></li>
+  <li><strong>Date of birth / birth time</strong> (time optional) — for readings.</li>
+  <li><strong>Gender</strong> — for readings.</li>
+  <li><strong>Birthplace</strong> (city) — for true-solar-time and astrological coordinate correction.</li>
+</ul>
+<p>We do <strong>not</strong> collect: location (GPS), contacts, photos, microphone, device identifiers (UDID/IDFA), login/credentials, payment info, or analytics/advertising/tracking data.</p>
+
+<h2>3. Storage</h2>
+<p>Input is stored in the app's sandboxed <code>UserDefaults</code>, encrypted at rest via iOS Data Protection when the device is locked. You can delete it anytime (“Re-enter birth info”) or by deleting the app.</p>
+
+<h2>4. Third parties (only when using AI in-depth readings)</h2>
+<p>When you request an AI in-depth reading, your <strong>birth date/time, gender, birthplace, and computed chart data</strong> are sent to:</p>
+<ul>
+  <li><strong>DalTokkie reading server</strong> (<code>daltokkie.vercel.app</code>, HTTPS): acts only as a relay; <strong>stores no user data (stateless).</strong></li>
+  <li><strong>OpenAI</strong> (<code>api.openai.com</code>): receives the above within the prompt to generate the reading text. OpenAI does not use API data to train its models and retains it for up to 30 days for abuse monitoring before deletion (per OpenAI policy).</li>
+  <li><strong>Not sent:</strong> name, device identifiers, location (GPS), contacts.</li>
+  <li>No name, account, or device identifier is included, so the data does <strong>not directly identify you.</strong></li>
+</ul>
+
+<h2>5. Purpose</h2>
+<ul>
+  <li>Calculating readings and generating AI interpretation text (app functionality only).</li>
+  <li><strong>Never</strong> used for advertising, marketing, profiling, or sale to third parties.</li>
+</ul>
+
+<h2>6. Retention</h2>
+<ul>
+  <li>On device: until you delete it or remove the app.</li>
+  <li>Reading server: not retained (discarded after the request).</li>
+  <li>OpenAI: up to 30 days per their policy.</li>
+</ul>
+
+<h2>7. Your rights</h2>
+<p>View/edit/delete your input directly in the app (My screen). For other requests, contact the email above.</p>
+
+<h2>8. Children</h2>
+<p>Not directed to children under 14; we do not knowingly collect children's data.</p>
+
+<h2>9. Changes</h2>
+<p>Updates will be posted in the app or on this page with a new effective date.</p>
+
+<h2>10. Disclaimer</h2>
+<p>Readings are for entertainment/reference and are not a substitute for professional medical, legal, or financial advice.</p>
+
+</body>
+</html>

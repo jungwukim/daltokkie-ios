@@ -87,7 +87,7 @@
 | 궁합 | `Fortune/CompatibilityView.swift` | 두 사주 **온디바이스 점수**(서버 불필요) |
 | AI 표시 | `Fortune/AIInterpretationView.swift` | 스트리밍 시트·`FormattedAIText`·`AISkeleton` |
 | ↳ | `Fortune/AIContentPanel.swift`·`AIContentSections.swift` | 세부해석 메뉴(톤 + 목록) |
-| 타로 | `Tarot/TarotView.swift`·`TarotData.swift` | 78장·스프레드·3D 플립·AI |
+| 타로 | `Tarot/TarotView.swift`·`TarotData.swift`·`Tarot/Draw3D/` | 78장·스프레드·AI. **원카드=3D 뽑기 무대**(부채꼴 펼침→선택→플립 공개, `TarotTableView`·`CardRevealView`·`CardSound`, DEC-021), 쓰리/켈틱=그리드 플립 |
 | 부적·마이 | `Misc/TalismanMyViews.swift` | 부적함·내 정보·지역 설정 |
 | 온보딩 | `OnboardingView.swift` | 생년월일시 입력 |
 | 공통 | `Theme.swift`·`Charts/FortuneCharts.swift` | DT 토큰·`CraftCard`·`dtDyn`(다크)·차트 |

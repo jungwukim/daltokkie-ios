@@ -37,7 +37,11 @@ struct TarotView: View {
             .navigationTitle("타로")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $session) { s in
-                TarotReadingView(session: s)
+                if s.spread == .one {
+                    TarotTableView(session: s)      // 원카드 — 3D 부채꼴 뽑기 무대
+                } else {
+                    TarotReadingView(session: s)
+                }
             }
         }
     }

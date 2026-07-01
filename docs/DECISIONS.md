@@ -219,6 +219,19 @@
 
 ---
 
+### DEC-021: 3D 타로 뽑기 — SwiftUI 2.5D (SceneKit 대신) (2026-07-02)
+
+**결정**: 타로를 물리적 카드처럼 뽑는 프리미엄 경험을 도입. 버드뷰 펠트 테이블에 부채꼴로 겹친 카드 뒷면 → 터치 시 "사사삭" 펼침(사운드+햅틱) → 한 장 선택 → 카드가 뽑혀 중앙으로 날아와 플립 → 자이로 광택이 흐르는 고급 풀스크린 공개. **렌더링은 SwiftUI 2.5D**(`rotation3DEffect`+`perspective`+`matchedGeometryEffect`+스프링)로 구현하고, SceneKit/RealityKit는 채택하지 않음. **카드 결정은 기존 `TarotData.drawCards`(결정적 시드)가 먼저 수행**하고 뒷면은 모두 동일 — 사용자가 어느 카드를 골라도 결정된 카드가 탭 순서로 배정(결정성·공정성 유지, 펼침/선택은 연출).
+**근거**: 요청된 인터랙션(부채꼴·스르륵 펼침·한 장 뽑아 풀스크린)은 *물리 시뮬레이션*보다 *안무된 모션*이며, 평면 카드는 SwiftUI에서 자연스럽게 표현됨. 기존 에셋(78장+뒷면)·데이터·Y축 플립 코드를 그대로 재사용 → 80% 효과/20% 노력. 원카드 풀플로우부터 POC.
+**대안 검토**: ① SceneKit 진짜 3D(실제 카메라·조명·그림자·물리) — 텍스처 파이프라인·히트테스트·상태 브릿지로 개발량 큼, 평면 카드엔 과투자로 Phase 2 보류 ② RealityKit — AR/공간용으로 과함 ③ Metal — 과투자
+**사운드**: 라이선스 리스크(AGPL/비상업 금지) 회피 위해 **직접 합성**(파이썬 노이즈 버스트 → afconvert AAC): `card-slide.m4a`(스위시)·`card-riffle.m4a`(16틱+베드). `CardSound`가 재생, 파일 없으면 `CoreHaptics`로 폴백. 무음 스위치 존중(`.ambient`). 추후 프로 샘플 교체 가능.
+**검증**: 임시 데모 훅(launch arg `TAROT_DEMO`, 캡처 후 제거)으로 시뮬 단계 캡처 — 딜-인·부채꼴 펼침(양끝 미절단)·중앙 뽑기·플립 공개 정상. BUILD SUCCEEDED. 자이로 광택은 실기기 확인 필요(시뮬 자이로 없음).
+**접근성**: `accessibilityReduceMotion` 시 부채꼴 연출을 건너뛰고 기존 `TarotReadingView` 그리드로 폴백.
+**관련 파일**: `App/Views/Tarot/Draw3D/`(TarotTableView·CardRevealView·CardSound 신설), `App/Views/Tarot/TarotView.swift`(원카드 분기), `App/Resources/card-*.m4a`
+**범위**: 원카드만 새 무대. 쓰리카드·켈틱은 기존 그리드 유지(다장 선택 확장은 후속).
+
+---
+
 ## 결정 템플릿
 
 새 결정 추가 시 아래 형식 사용:
